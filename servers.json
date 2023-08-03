@@ -1,0 +1,23 @@
+{
+    "1136726273788493995": {
+        "id": 1136726273788493995,
+        "command_prefix": "!",
+        "welcome_channel_id": 0,
+        "audit_channel_id": 0,
+        "confessions_channel_id": 0
+    },
+    "789234612478": {
+        "id": 789234612478,
+        "command_prefix": "!",
+        "welcome_channel_id": 0,
+        "audit_channel_id": 0,
+        "confessions_channel_id": 0
+    },
+    "123": {
+        "id": 123,
+        "command_prefix": "!",
+        "welcome_channel_id": 0,
+        "audit_channel_id": 0,
+        "confessions_channel_id": 0
+    }
+}
