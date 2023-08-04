@@ -1,23 +1,9 @@
 {
     "1136726273788493995": {
         "id": 1136726273788493995,
-        "command_prefix": "!",
-        "welcome_channel_id": 0,
-        "audit_channel_id": 0,
-        "confessions_channel_id": 0
-    },
-    "789234612478": {
-        "id": 789234612478,
-        "command_prefix": "!",
-        "welcome_channel_id": 0,
-        "audit_channel_id": 0,
-        "confessions_channel_id": 0
-    },
-    "123": {
-        "id": 123,
-        "command_prefix": "!",
-        "welcome_channel_id": 0,
-        "audit_channel_id": 0,
-        "confessions_channel_id": 0
+        "welcome_channel_id": 1136729265530998884,
+        "audit_channel_id": 1136729290709405887,
+        "confessions_channel_id": 1136729441528188987,
+        "confessions_allowed": false
     }
 }

@@ -1,34 +1,38 @@
 # Main Packages
 import discord
+from discord import app_commands
 from discord.ext import commands
 import responses
 
-#Errors
+# Config
+from config import TOKEN
+from config import COMMAND_PREFIX
+
+# Errors
 from discord.ext.commands import CommandNotFound
 from discord.ext.commands import MissingRequiredArgument
 
-#Other Packages
+# Other Packages
 import pytz
 import random
 import json
 
-TOKEN = 'MTEzNjcyNzU3ODE0OTkxMjY3Nw.G_uikU.3FesIGyUYtuRysYESpXQyEBh2hhKXUgKglP8Wo'
 
 GUILD_ID = 1136726273788493995
 AUDIT_CHANNEL_ID = 1136729290709405887
 CONFESSIONS_CHANNEL_ID = 1136729441528188987
 WELCOME_CHANNEL_ID = 1136729265530998884
 
-COMMAND_PREFIX = '!'
 
 CONFESSIONS_ALLOWED = True
 
 def start_bot():
+    # Intents
     my_intents = discord.Intents.default()
     my_intents.message_content = True
     my_intents.dm_messages = True
     my_intents.members = True
-    # client = discord.Client(intents=myIntents)
+
     global bot
     bot = commands.Bot(COMMAND_PREFIX, intents=my_intents, help_command=None)
 
@@ -36,13 +40,32 @@ def start_bot():
     serverDict = dict()
 
     load_servers()
-    serverDict[123] = Server(123)
-    save_servers()
+
+    event_methods()
+
+    dev_command_methods()
+
+    command_methods()
+
+    slash_commands()
+
+    # Run bot
+    bot.run(TOKEN)
+
+
+
+def event_methods():
 
     @bot.event
     async def on_ready():
         print(f'{bot.user} is now running!')
+        try:
+            synced = await bot.tree.sync()
+            print(f'Synced {len(synced)} command(s)')
+        except Exception as e:
+            print(e)
         await bot.change_presence( status=discord.Status.online, activity=discord.Game('games! 🍰') )
+
 
     @bot.event
     async def on_audit_log_entry_create(entry):
@@ -59,22 +82,144 @@ def start_bot():
         # await channel.send(f":bookmark:\n> Server Nickname: \"{'No nickname' if (type(entry.user) is discord.user.User or type(entry.user) is None) else entry.user.nick}\"\n> User: \"{entry.user.global_name}\"\n> ID: \"{entry.user.name}\" \n> Action: {entry.action} \n> Date: {time.split('T')[0]}\n > Time: {time.split('T')[1].split('.')[0]} EST")
         await channel.send(embed=embededLog)
 
+ 
+    @bot.event
+    async def on_command_error(context, error):
+        if isinstance(error, CommandNotFound):
+            print("Command not found!")
+        elif isinstance(error, MissingRequiredArgument):
+            print("Missing argument!")
+        else:
+            raise error
+
+
+    @bot.event
+    async def on_member_join(member):
+        print(member.global_name + ' joined the server')
+
+        welcome_messages = [f"Hello __{member.global_name}__, welcome to our server! I hope you have a great time here! 🍰", f"Hi __{member.global_name}__, welcome! I hope you make lots of friends here! 🍰",
+        f"Welcome __{member.global_name}__, do you also like cake!? 🍰", f"Please everyone welcome __{member.global_name}__! 🍰", f"Heyo __{member.global_name}__, welcome to our server! 🍰"]
+
+        await bot.get_guild(GUILD_ID).get_channel(WELCOME_CHANNEL_ID).send( '### ' + welcome_messages[ random.randint(0, len(welcome_messages)-1) ] )
+
+
+    @bot.event
+    async def on_guild_join(guild):
+        print(f'{bot.user} joined a new guild {guild.id}')
+        serverDict[guild.id] = Server(guild.id)
+        save_servers()
+
+
+    @bot.event
+    async def on_message(message):
+        # Checks if a DM is a from a guild member
+        if (bot.get_guild(GUILD_ID).get_member(message.author.id) is None):
+            await message.channel.send('You are not a member of our server! 😔')
+            return
+
+        # Ignores Bot's messages
+        if message.author == bot.user:
+            return
+
+        # Message log
+        if not ( str(message.content).startswith(f'{COMMAND_PREFIX}confess') and isinstance(message.channel, discord.DMChannel) ):
+            print(f"\n\"{message.author.global_name}\" / \"{message.author}\" said: \"{str(message.content)}\" in \"{message.channel}\" server: \"{message.guild}\"")
+
+        # This actually processes the commands since we overrode on_message()
+        await bot.process_commands(message)
+
+        # Custom text messages
+        if isinstance(message.channel, discord.DMChannel):
+            response = responses.handle_dm(message.content)
+            if response != '':
+                await message.channel.send(response)
+        else:
+            await answer_message(message)
+
+
+def dev_command_methods():
+
+    @bot.command(name='dev_shutdown')
+    @commands.is_owner()
+    async def dev_shutdown(ctx):
+        save_servers()
+        exit()
+
+    @bot.command(name='dev_saveservers')
+    @commands.is_owner()
+    async def dev_saveservers(ctx):
+        save_servers()
+
+
+def command_methods():
+    # Set channels
+    @bot.command(name='setwelcome')
+    async def set_welcome(context):
+        if is_admin(context):
+            serverDict[context.guild.id].welcome_channel_id = context.channel.id
+            print(serverDict[context.guild.id].welcome_channel_id)
+            save_servers()
+            await context.channel.send('This channel is now the \"Welcome\" channel!')
+        else:
+            await context.channel.send('Sorry only an admin can do that 😔')
+    
+    @bot.command(name='setaudit')
+    async def set_audit(context):
+        if is_admin(context):
+            serverDict[context.guild.id].audit_channel_id = context.channel.id
+            print(serverDict[context.guild.id].audit_channel_id)
+            save_servers()
+            await context.channel.send('This channel is now the \"Audit Log\" channel!')
+        else:
+            await context.channel.send('Sorry only an admin can do that 😔')
+    
+    @bot.command(name='setconfessions')
+    async def set_confessions(context):
+        if is_admin(context):
+            serverDict[context.guild.id].confessions_channel_id = context.channel.id
+            print(serverDict[context.guild.id].confessions_channel_id)
+            save_servers()
+            await context.channel.send('This channel is now the \"Confessions\" channel!')
+        else:
+            await context.channel.send('Sorry only an admin can do that 😔')
+
+    # Set Settings
+    @bot.command(name='canconfess')
+    async def can_confess(context, arg):
+        if is_admin(context):
+            if arg.lower() == 'true' or arg.lower() == 'false':
+                get_server_info(context).confessions_allowed = bool(arg.lower())
+                state = get_server_info(context).confessions_allowed
+                await context.channel.send('Confessions are now allowed!' if (state == True) else 'Confessions are no longer allowed')
+            else:
+                await context.send('The command is:\n!canconfess true')
+        else:
+            await context.channel.send('Sorry only an admin can do that 😔')
+
+    @can_confess.error
+    async def can_confess(context, error):
+        if is_admin(context):
+            await context.send('The command is:\n!canconfess true')
+        else:
+            await context.channel.send('Sorry only an admin can do that 😔')
+
+
     @bot.command(name='repeat')
     async def repeat(context, *, arg):
-        if not isinstance(context.channel, discord.DMChannel):
+        if not is_DM(context):
             await context.send(arg)
     
     @repeat.error
     async def repeat(context, error):
-        if not isinstance(context.channel, discord.DMChannel):
+        if not is_DM(context):
             await context.channel.send(f'The command should go:\n{COMMAND_PREFIX}repeat I will repeat this!')
 
 
     @bot.command(name='confess')
     async def confess(context, *, arg):
         if isinstance(context.channel, discord.DMChannel):
-            if CONFESSIONS_ALLOWED:
-                if bot.get_guild(GUILD_ID).get_member(context.author.id) is None:
+            if get_server_info(context).confessions_allowed:
+                if is_member_from_guild(context) is None:
                     await context.author.send('You are not a member of our server! 😔')
 
                 else:
@@ -87,7 +232,7 @@ def start_bot():
                         # await client.get_channel(CONFESSIONS_CHANNEL_ID).send("### 🫧  By Anonymous Member!\n>>> " + confession)
                         await bot.get_channel(CONFESSIONS_CHANNEL_ID).send(embed=embededConfession)
             else:
-                await context.author.send('Sorry, confessions are temporarily disabled')
+                await context.author.send('Sorry, confessions are disabled')
         else:
             await context.channel.send('Sorry, but you need to tell me that in a DM')
     
@@ -150,63 +295,14 @@ def start_bot():
             await context.send(f'>>> 🍰 Hi! My current commands are\n**{COMMAND_PREFIX}repeat** I will repeat anything you want to say!\n**{COMMAND_PREFIX}standoff** Want to do a cowboy stand off against a friend? 🤠\nand if you DM me...\n**{COMMAND_PREFIX}confess** Your confession will be sent to the #Confessions Channel!\nIf you need help with individual commands type the command!')
 
 
-    @bot.command(name='shutdown')
-    @commands.is_owner()
-    async def shutdown(ctx):
-        exit()
+def slash_commands():
 
-
-    @bot.event
-    async def on_command_error(context, error):
-        if isinstance(error, CommandNotFound):
-            print("Command not found!")
-        elif isinstance(error, MissingRequiredArgument):
-            print("Missing argument!")
-        else:
-            raise error
-
-
-    @bot.event
-    async def on_member_join(member):
-        print(member.global_name + ' joined the server')
-
-        welcome_messages = [f"Hello __{member.global_name}__, welcome to our server! I hope you have a great time here! 🍰", f"Hi __{member.global_name}__, welcome! I hope you make lots of friends here! 🍰",
-        f"Welcome __{member.global_name}__, do you also like cake!? 🍰", f"Please everyone welcome __{member.global_name}__! 🍰", f"Heyo __{member.global_name}__, welcome to our server! 🍰"]
-
-        await bot.get_guild(GUILD_ID).get_channel(WELCOME_CHANNEL_ID).send( '### ' + welcome_messages[ random.randint(0, len(welcome_messages)-1) ] )
-
-    @bot.event
-    async def on_guild_join(guild):
-        print(f'bot joined guild {guild.id}')
-
-    @bot.event
-    async def on_message(message):
-        # Checks if a DM is a from a guild member
-        if (bot.get_guild(GUILD_ID).get_member(message.author.id) is None):
-            await message.channel.send('You are not a member of our server! 😔')
-            return
-
-        # Ignores Bot's messages
-        if message.author == bot.user:
-            return
-
-        # Message log
-        if not ( str(message.content).startswith(f'{COMMAND_PREFIX}confess') and isinstance(message.channel, discord.DMChannel) ):
-            print(f"\n\"{message.author.global_name}\" / \"{message.author}\" said: \"{str(message.content)}\" in \"{message.channel}\" server: \"{message.guild}\"")
-
-        # This actually processes the commands since we overrode on_message()
-        await bot.process_commands(message)
-
-        # Custom text messages
-        if isinstance(message.channel, discord.DMChannel):
-            response = responses.handle_dm(message.content)
-            if response != '':
-                await message.channel.send(response)
-        else:
-            await answer_message(message)
-    
-    # Run bot
-    bot.run(TOKEN)
+    @bot.tree.command(name='confess')
+    @app_commands.describe(confession = 'What would you like to confess?')
+    async def confess(interaction: discord.Interaction, confession: str):
+        await interaction.channel.send(confession)
+        await interaction.response.defer()
+        return await interaction.delete_original_response()
 
 
 async def answer_message(original_message):
@@ -219,14 +315,12 @@ async def answer_message(original_message):
         print(e)
 
 
-
-
+# On these methods context means either context from a command or message
 def get_guild(context):
-    guild = bot.get_guild(context.guild.id)
-    return guild
+    return bot.get_guild(context.guild.id)
 
 
-def is_member_on_guild(context):
+def is_member_from_guild(context):
     member = bot.get_guild(context.guild.id).get_member(context.author.id)
     if member is None:
         return False
@@ -234,11 +328,43 @@ def is_member_on_guild(context):
         return True
 
 
+def is_owner(context):
+    if context.guild.owner_id == context.author.id:
+        return True
+    else:
+        return False
+
+
+def is_admin(context):
+    if context.author.guild_permissions == discord.Permissions.all():
+        return True
+    else:
+        return False
+
+
 def is_DM(context):
     if isinstance(context.channel, discord.DMChannel):
         return True
     else:
         return False
+
+
+def get_server_info(context):
+    return serverDict[context.guild.id]
+
+
+# Server information saving and loading
+def save_servers():
+    print('Saving server data...')
+    with open('servers.json', 'w') as file:
+        dict_to_save = dict()
+        for key in serverDict:
+            dict_to_save[key] = serverDict[key].__dict__
+        json_string = json.dumps(dict_to_save, indent = 4)
+        file.write(json_string)
+
+        file.close()
+    print('Servers were saved')
 
 
 def load_servers():
@@ -257,35 +383,27 @@ def load_servers():
             print(f'\"{serverDict[key]}\"')
 
         file.close()
-
-def save_servers():
-    with open('servers.json', 'w') as file:
-        dict_to_save = dict()
-        for key in serverDict:
-            dict_to_save[key] = serverDict[key].__dict__
-        json_string = json.dumps(dict_to_save, indent = 4)
-        file.write(json_string)
-
-        file.close()
+    
+    print('Server data was loaded')
 
 
-
+# Classes
 class Server:
     def __init__(self, guild_id):
         self.id = guild_id
 
         # Default values
-        self.command_prefix = '!'
         self.welcome_channel_id = 0
         self.audit_channel_id = 0
         self.confessions_channel_id = 0
+        self.confessions_allowed = False
     
     def __str__(self) -> str:
-        return f'id: {self.id} command_prefix: {self.command_prefix} welcome_channel_id: {self.welcome_channel_id} audit_channel_id: {self.audit_channel_id} confessions_channel_id: {self.confessions_channel_id}'
+        return f'id: {self.id}  welcome_channel_id: {self.welcome_channel_id} audit_channel_id: {self.audit_channel_id} confessions_channel_id: {self.confessions_channel_id} confessions_allowed: {self.confessions_allowed}'
 
     def load_data(self, dictionary):
         self.id = dictionary['id']
-        self.command_prefix = dictionary['command_prefix']
         self.welcome_channel_id = dictionary['welcome_channel_id']
         self.audit_channel_id = dictionary['audit_channel_id']
         self.confessions_channel_id = dictionary['confessions_channel_id']
+        self.confessions_allowed = dictionary['confessions_allowed']
