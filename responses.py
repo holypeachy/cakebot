@@ -1,4 +1,4 @@
-import bot
+import newbot
 import random
 
 EMOJI_LIST = ['😄','😊','🤗']
@@ -12,7 +12,7 @@ def handle_response(message) -> str:
         return GREET_LIST[random.randint(0, len(GREET_LIST) - 1)] + ' ' + EMOJI_LIST[random.randint(0, len(EMOJI_LIST) - 1)]
 
     elif p_message == 'cake help':
-        return 'Type ' + bot.COMMAND_PREFIX + 'help to see all my commands!'
+        return 'Type ' + newbot.COMMAND_PREFIX + 'help to see all my commands!'
 
     elif p_message == 'good cake':
         return GOOD_LIST[random.randint(0, len(GOOD_LIST) - 1)]
@@ -25,4 +25,4 @@ def handle_dm(message) ->str:
     if p_message.split(' ', 1)[0] == '!confess':
         return ''
     else:
-        return 'Hi! 👋 To make your confession type ' + bot.COMMAND_PREFIX + 'confess followed by your message.'
+        return 'Hi! 👋 To make your confession type ' + newbot.COMMAND_PREFIX + 'confess followed by your message.'

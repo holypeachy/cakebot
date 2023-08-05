@@ -17,14 +17,14 @@ import pytz
 import random
 import json
 
-
 GUILD_ID = 1136726273788493995
 AUDIT_CHANNEL_ID = 1136729290709405887
 CONFESSIONS_CHANNEL_ID = 1136729441528188987
 WELCOME_CHANNEL_ID = 1136729265530998884
 
-
 CONFESSIONS_ALLOWED = True
+
+TAYIMO_ID = 403249158187778067
 
 def start_bot():
     # Intents
@@ -69,17 +69,15 @@ def event_methods():
 
     @bot.event
     async def on_audit_log_entry_create(entry):
-        channel = entry.guild.get_channel(AUDIT_CHANNEL_ID)
+        channel = entry.guild.get_channel(get_server_info(entry).audit_channel_id)
         time = entry.created_at.astimezone(tz=pytz.timezone('America/New_York')).isoformat()
 
         print('\nServer log created:')
         print(f" Server Nickname: {'No nickname' if (type(entry.user) is discord.user.User or type(entry.user) is None) else entry.user.nick} User: {entry.user.global_name} ID:{entry.user.name} | Action: {entry.action.name} | Date: {time.split('T')[0]} Time: {time.split('T')[1].split('.')[0]} EST\n")
 
-        oldLog = f"\n Server Nickname: \"{'No nickname' if (type(entry.user) is discord.user.User or type(entry.user) is None) else entry.user.nick}\"\n User: \"{entry.user.global_name}\"\n ID: \"{entry.user.name}\" \n Action: {entry.action.name} \n Date: {time.split('T')[0]}\n  Time: {time.split('T')[1].split('.')[0]} EST"
-        newLog = f"{entry.user.name}  {entry.action.name} \n{time.split('T')[0]} at {time.split('T')[1].split('.')[0]} EST"
-        embededLog = discord.Embed(title="🫧", description=newLog, color=0x9dc8d1)
+        log = f"{entry.user.name}  {entry.action.name} \n{time.split('T')[0]} at {time.split('T')[1].split('.')[0]} EST"
+        embededLog = discord.Embed(title="🫧", description=log, color=0x9dc8d1)
 
-        # await channel.send(f":bookmark:\n> Server Nickname: \"{'No nickname' if (type(entry.user) is discord.user.User or type(entry.user) is None) else entry.user.nick}\"\n> User: \"{entry.user.global_name}\"\n> ID: \"{entry.user.name}\" \n> Action: {entry.action} \n> Date: {time.split('T')[0]}\n > Time: {time.split('T')[1].split('.')[0]} EST")
         await channel.send(embed=embededLog)
 
  
@@ -100,7 +98,7 @@ def event_methods():
         welcome_messages = [f"Hello __{member.global_name}__, welcome to our server! I hope you have a great time here! 🍰", f"Hi __{member.global_name}__, welcome! I hope you make lots of friends here! 🍰",
         f"Welcome __{member.global_name}__, do you also like cake!? 🍰", f"Please everyone welcome __{member.global_name}__! 🍰", f"Heyo __{member.global_name}__, welcome to our server! 🍰"]
 
-        await bot.get_guild(GUILD_ID).get_channel(WELCOME_CHANNEL_ID).send( '### ' + welcome_messages[ random.randint(0, len(welcome_messages)-1) ] )
+        await bot.get_guild(member.guild.id).get_channel(get_server_info(member).welcome_channel_id).send( '### ' + welcome_messages[ random.randint(0, len(welcome_messages)-1) ] )
 
 
     @bot.event
@@ -112,13 +110,14 @@ def event_methods():
 
     @bot.event
     async def on_message(message):
-        # Checks if a DM is a from a guild member
-        if (bot.get_guild(GUILD_ID).get_member(message.author.id) is None):
-            await message.channel.send('You are not a member of our server! 😔')
-            return
-
         # Ignores Bot's messages
         if message.author == bot.user:
+            return
+
+        # Checks if a DM is a from a guild member
+        print(message)
+        if (bot.get_guild(message.guild.id).get_member(message.author.id) is None):
+            await message.channel.send('You are not a member of our server! 😔')
             return
 
         # Message log
@@ -153,7 +152,7 @@ def dev_command_methods():
 
 def command_methods():
     # Set channels
-    @bot.command(name='setwelcome')
+    @bot.command(name='set_welcome')
     async def set_welcome(context):
         if is_admin(context):
             serverDict[context.guild.id].welcome_channel_id = context.channel.id
@@ -163,7 +162,7 @@ def command_methods():
         else:
             await context.channel.send('Sorry only an admin can do that 😔')
     
-    @bot.command(name='setaudit')
+    @bot.command(name='set_audit')
     async def set_audit(context):
         if is_admin(context):
             serverDict[context.guild.id].audit_channel_id = context.channel.id
@@ -173,7 +172,7 @@ def command_methods():
         else:
             await context.channel.send('Sorry only an admin can do that 😔')
     
-    @bot.command(name='setconfessions')
+    @bot.command(name='set_confessions')
     async def set_confessions(context):
         if is_admin(context):
             serverDict[context.guild.id].confessions_channel_id = context.channel.id
@@ -184,22 +183,22 @@ def command_methods():
             await context.channel.send('Sorry only an admin can do that 😔')
 
     # Set Settings
-    @bot.command(name='canconfess')
-    async def can_confess(context, arg):
+    @bot.command(name='enableconfessions')
+    async def enableconfession(context, arg):
         if is_admin(context):
             if arg.lower() == 'true' or arg.lower() == 'false':
-                get_server_info(context).confessions_allowed = bool(arg.lower())
+                get_server_info(context).confessions_allowed = True if arg == 'true' else False
                 state = get_server_info(context).confessions_allowed
                 await context.channel.send('Confessions are now allowed!' if (state == True) else 'Confessions are no longer allowed')
             else:
-                await context.send('The command is:\n!canconfess true')
+                await context.send(f'The command is:\n{COMMAND_PREFIX}canconfess true')
         else:
             await context.channel.send('Sorry only an admin can do that 😔')
 
-    @can_confess.error
-    async def can_confess(context, error):
+    @enableconfession.error
+    async def enableconfession_error(context, error):
         if is_admin(context):
-            await context.send('The command is:\n!canconfess true')
+            await context.send(f'The command is:\n{COMMAND_PREFIX}enableconfessions true')
         else:
             await context.channel.send('Sorry only an admin can do that 😔')
 
@@ -210,53 +209,16 @@ def command_methods():
             await context.send(arg)
     
     @repeat.error
-    async def repeat(context, error):
+    async def repeat_error(context, error):
         if not is_DM(context):
             await context.channel.send(f'The command should go:\n{COMMAND_PREFIX}repeat I will repeat this!')
 
-
-    @bot.command(name='confess')
-    async def confess(context, *, arg):
-        if isinstance(context.channel, discord.DMChannel):
-            if get_server_info(context).confessions_allowed:
-                if is_member_from_guild(context) is None:
-                    await context.author.send('You are not a member of our server! 😔')
-
-                else:
-                    confession = str(arg)
-                    if '@everyone' in confession:
-                        await context.author.send('Please don\'t mention everyone on confessions')
-                    else:
-                        embededConfession = discord.Embed(title="🫧  By Anonymous Member!", description=confession, color=0x9dc8d1)
-                        await context.author.send('Your confession was posted on the Confessions channel! 🫧')
-                        # await client.get_channel(CONFESSIONS_CHANNEL_ID).send("### 🫧  By Anonymous Member!\n>>> " + confession)
-                        await bot.get_channel(CONFESSIONS_CHANNEL_ID).send(embed=embededConfession)
-            else:
-                await context.author.send('Sorry, confessions are disabled')
-        else:
-            await context.channel.send('Sorry, but you need to tell me that in a DM')
-    
-    @confess.error
-    async def confess(context, error):
-        print(COMMAND_PREFIX + 'confess: ' + str(error))
-        if isinstance(context.channel, discord.DMChannel):
-            if CONFESSIONS_ALLOWED:
-                if bot.get_guild(GUILD_ID).get_member(context.author.id) is None:
-                        await context.author.send('You are not a member of our server! 😔')
-                else:
-                    await context.author.send('The command is:\n' + COMMAND_PREFIX + 'confess I confess that I am a good cake!')
-            else:
-                await context.author.send('Sorry, confessions are temporarily disabled')
-        else:
-            await context.channel.send('Sorry, but you need to tell me that in a DM')
-
-
     @bot.command(name='standoff')
     async def standoff(context, *arg):
-        if not isinstance(context.channel, discord.DMChannel):
+        if not is_DM(context):
             if len(arg) == 1:
                 if context.author.nick is None:
-                    player1 = context.author.global_name
+                    player1 = context.author.display_name
                 else:
                     player1 = context.author.nick
 
@@ -265,22 +227,26 @@ def command_methods():
                     player2 = str.removeprefix(player2, '<@')
                     player2 = str.removesuffix(player2, '>')
                 else:
-                    await context.channel.send(f'The usage of the command is:\n' + COMMAND_PREFIX +'standoff @user\n or (this following bit has not been implemented yet)\n' + COMMAND_PREFIX + 'standoff @user @user')
+                    await context.channel.send(f'The usage of the command is:\n' + COMMAND_PREFIX +'standoff @user')
                     return
 
                 if player2.startswith('&'):
                     player2 = str.removeprefix(player2, '&')
 
                 player2 = int(player2)
-                temp = bot.get_guild(GUILD_ID).get_member(player2)
+                player2id = player2
+                temp = bot.get_guild(context.guild.id).get_member(player2)
                 if temp.nick is None:
-                    player2 = temp.global_name
+                    player2 = temp.display_name
                 else:
                     player2 = temp.nick
 
-                if random.randint(1, 10) <= 5:
+                if context.author.id == TAYIMO_ID:
+                    await context.channel.send(f'# 🤠   👉      👈💥\n> **{player2}** wins!')
+                elif player2id == TAYIMO_ID:
                     await context.channel.send(f'# 💥👉      👈🤠\n> **{player1}** wins!')
-                    
+                elif random.randint(1, 10) <= 5:
+                    await context.channel.send(f'# 💥👉      👈🤠\n> **{player1}** wins!')
                 else:
                     await context.channel.send(f'# 🤠👉      👈💥\n> **{player2}** wins!')
             else:
@@ -292,17 +258,32 @@ def command_methods():
     @bot.command(name='help')
     async def help(context):
         if not isinstance(context.channel, discord.DMChannel):
-            await context.send(f'>>> 🍰 Hi! My current commands are\n**{COMMAND_PREFIX}repeat** I will repeat anything you want to say!\n**{COMMAND_PREFIX}standoff** Want to do a cowboy stand off against a friend? 🤠\nand if you DM me...\n**{COMMAND_PREFIX}confess** Your confession will be sent to the #Confessions Channel!\nIf you need help with individual commands type the command!')
+            await context.send(f'>>> 🍰 Hi! My current commands are\n**{COMMAND_PREFIX}standoff** Want to do a cowboy stand off against a friend? 🤠\n**/confess** in the confessions channel to send an anonymous confessions\nIf you need help with individual commands type the command!')
 
 
 def slash_commands():
 
     @bot.tree.command(name='confess')
+    @app_commands.check(check_confession_channel)
     @app_commands.describe(confession = 'What would you like to confess?')
     async def confess(interaction: discord.Interaction, confession: str):
-        await interaction.channel.send(confession)
-        await interaction.response.defer()
-        return await interaction.delete_original_response()
+        if '@everyone' in confession:
+            await interaction.response.send_message('Please don\'t mention everyone on your confession', ephemeral=True)
+        else:
+            embededConfession = discord.Embed(title="🫧  By Anonymous Member!", description=confession, color=0x9dc8d1)
+            await interaction.response.send_message('Your confession has been successfully posted and only you can see this message', ephemeral=True)
+            await interaction.channel.send(embed=embededConfession)
+    
+    @confess.error
+    async def confess_error(interaction : discord.Interaction, error):
+        if not serverDict[interaction.guild.id].confessions_allowed:
+            await interaction.response.send_message('Sorry, confessions are not allowed on this server, tell an admin to enable it', ephemeral=True)
+        elif not serverDict[interaction.guild.id].confessions_channel_id == interaction.channel.id:
+            await interaction.response.send_message('Sorry, please do your confession on the confessions channel', ephemeral=True)
+        else:
+            print(f'/confess: {error}')
+            await interaction.response.send_message('Uknown Error, please report')
+    
 
 
 async def answer_message(original_message):
@@ -351,6 +332,13 @@ def is_DM(context):
 
 def get_server_info(context):
     return serverDict[context.guild.id]
+
+
+def check_confession_channel(interaction : discord.Interaction):
+    if serverDict[interaction.guild.id].confessions_allowed and serverDict[interaction.guild.id].confessions_channel_id == interaction.channel.id:
+        return True
+    else:
+        return False
 
 
 # Server information saving and loading
@@ -407,3 +395,6 @@ class Server:
         self.audit_channel_id = dictionary['audit_channel_id']
         self.confessions_channel_id = dictionary['confessions_channel_id']
         self.confessions_allowed = dictionary['confessions_allowed']
+
+# TODO: Add confession checking to error so we know what the error was (aka confessions channel not set). Or show commmand only on confessions channel
+# TODO: Fix confessions

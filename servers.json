@@ -4,6 +4,6 @@
         "welcome_channel_id": 1136729265530998884,
         "audit_channel_id": 1136729290709405887,
         "confessions_channel_id": 1136729441528188987,
-        "confessions_allowed": false
+        "confessions_allowed": true
     }
 }
