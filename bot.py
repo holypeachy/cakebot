@@ -230,7 +230,7 @@ async def answer_message(original_message):
 
 
 def is_permitted_to_purge(member: discord.Member):
-    permitted_roles = ['Owner', 'Admin', 'Mods']
+    permitted_roles = ['Owner', 'Admin']
     member_roles = member.roles
     for role in member_roles:
         if role.name in permitted_roles:
