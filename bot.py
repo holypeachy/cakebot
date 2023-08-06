@@ -202,8 +202,8 @@ def start_bot():
     @client.command(name='purge')
     async def purge_channel(context, *args):
         # Test channel ID for krayon: 1098216731111067731
-        live_channel_ids = {"Bot-Testing": 1136013944029462538}
-        permitted_channels = [channel for channel in live_channel_ids.values()]
+        live_channel_ids: dict = {"Bot-Testing": 1136013944029462538}
+        permitted_channels: list = [channel for channel in live_channel_ids.values()]
         channel: discord.TextChannel = context.channel
         if channel.id in permitted_channels:  # Channel check
             limit = int(args[0]) if args else 200  # If user specifies limit, else default to 200
