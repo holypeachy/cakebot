@@ -1,0 +1,10 @@
+{
+    "1136726273788493995": {
+        "id": 1136726273788493995,
+        "welcome_channel_id": 1136729265530998884,
+        "audit_channel_id": 1136729290709405887,
+        "confessions_channel_id": 1136729441528188987,
+        "confessions_allowed": true,
+        "audit_enabled": true
+    }
+}

@@ -1,5 +1,5 @@
-import bot
+import newbot
 
 if __name__ == '__main__':
     print("Starting CakeBot...")
-    bot.start_bot()
+    newbot.start_bot()
