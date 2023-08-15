@@ -269,6 +269,22 @@ def command_methods():
         if not isinstance(context.channel, discord.DMChannel):
             await context.send(f'>>> 🍰 Hi! My current commands are\n**{COMMAND_PREFIX}standoff** Want to do a cowboy stand off against a friend? 🤠\n**/confess** in the confessions channel to send an anonymous confessions\nIf you need help with individual commands type the command!')
 
+        # Usage: !purge [limit]
+    @bot.command(name='purge')
+    async def purge_channel(context, *args):
+        test_channel_ids: dict = {'general': 1098216731111067731}  # Test channel IDs for krayon
+        live_channel_ids: dict = {'Bot-Testing': 1136013944029462538}  # Live channel IDs where purging is allowed:
+        permitted_channels: list = [channel for channel in live_channel_ids.values()]
+        channel: discord.TextChannel = context.channel
+        if channel.id in permitted_channels:  # Channel check
+            limit = int(args[0]) if args else 200  # If user specifies limit, else default to 200
+            print(f'Purge command called in channel "{channel.name}" for {limit} messages.')
+            author: discord.Member = context.author
+            if is_permitted_to_purge(author):  # User check
+                await channel.purge(limit=limit+1)
+        else:
+            print(f'Channel "{channel.name}" is not eligible for purging.')
+
 
 def slash_commands():
 
@@ -342,6 +358,17 @@ def is_confessions_channel(interaction : discord.Interaction):
         return True
     else:
         return False
+
+
+def is_permitted_to_purge(member: discord.Member):
+    permitted_roles = ['Owner', 'Admin']
+    member_roles = member.roles
+    for role in member_roles:
+        if role.name in permitted_roles:
+            print(f'User "{member.global_name}" is eligible to purge.')
+            return True
+    print(f'User "{member.global_name}" is not eligible to purge.')  # TODO: Send in text channel
+    return False
 
 
 # Server information saving and loading
