@@ -314,37 +314,25 @@ def get_guild(context: commands.Context):
 
 def is_member_from_guild(context: commands.Context):
     member = bot.get_guild(context.guild.id).get_member(context.author.id)
-    if member is None:
+    if not member:
         return False
     else:
         return True
 
 
 def is_owner(context: commands.Context):
-    if context.author.id == context.guild.owner_id:
-        return True
-    else:
-        return False
+    return context.author.id == context.guild.owner_id
 
 
 def is_admin(context: commands.Context):
-    if context.author.guild_permissions.administrator == True:
-        return True
-    else:
-        return False
+    return context.author.guild_permissions.administrator
 
 
 def is_DM(context: commands.Context):
-    if isinstance(context.channel, discord.DMChannel):
-        return True
-    else:
-        return False
+    return isinstance(context.channel, discord.DMChannel)
 
 def is_DM(message: discord.Message):
-    if isinstance(message.channel, discord.DMChannel):
-        return True
-    else:
-        return False
+    return isinstance(message.channel, discord.DMChannel)
 
 
 def is_confessions_channel(interaction : discord.Interaction):
