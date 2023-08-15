@@ -271,19 +271,22 @@ def command_methods():
 
         # Usage: !purge [limit]
     @bot.command(name='purge')
-    async def purge_channel(context, *args):
-        test_channel_ids: dict = {'general': 1098216731111067731}  # Test channel IDs for krayon
-        live_channel_ids: dict = {'Bot-Testing': 1136013944029462538}  # Live channel IDs where purging is allowed:
-        permitted_channels: list = [channel for channel in live_channel_ids.values()]
-        channel: discord.TextChannel = context.channel
-        if channel.id in permitted_channels:  # Channel check
-            limit = int(args[0]) if args else 200  # If user specifies limit, else default to 200
-            print(f'Purge command called in channel "{channel.name}" for {limit} messages.')
-            author: discord.Member = context.author
-            if is_permitted_to_purge(author):  # User check
-                await channel.purge(limit=limit+1)
+    async def purge_channel(context: commands.Context, *args):
+        if not is_DM(context):
+            test_channel_ids: dict = {'general': 1098216731111067731, 'welcome_test' : 1136729265530998884, 'log_audit' : 1136729290709405887}  # Test channel IDs for krayon
+            live_channel_ids: dict = {'Bot-Testing': 1136013944029462538}  # Live channel IDs where purging is allowed:
+            permitted_channels: list = [channel for channel in test_channel_ids.values()]
+            channel: discord.TextChannel = context.channel
+            if channel.id in permitted_channels:  # Channel check
+                limit = int(args[0]) if args else 200  # If user specifies limit, else default to 200
+                print(f'Purge command called in channel "{channel.name}" for {limit} messages.')
+                author: discord.Member = context.author
+                if is_permitted_to_purge(context):  # User check
+                    await channel.purge(limit=limit+1)
+            else:
+                print(f'Channel "{channel.name}" is not eligible for purging.')
         else:
-            print(f'Channel "{channel.name}" is not eligible for purging.')
+            await context.author.send('Sorry, you can only purge on a server')
 
 
 def slash_commands():
@@ -370,6 +373,8 @@ def is_permitted_to_purge(member: discord.Member):
     print(f'User "{member.global_name}" is not eligible to purge.')  # TODO: Send in text channel
     return False
 
+def is_permitted_to_purge(context: commands.Context):
+    return context.author.guild_permissions.administrator
 
 # Server information saving and loading
 def save_servers():

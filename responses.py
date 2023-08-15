@@ -25,4 +25,4 @@ def handle_dm(message) ->str:
     if p_message.split(' ', 1)[0] == '!confess':
         return ''
     else:
-        return 'Hi! 👋 To make your confession type ' + newbot.COMMAND_PREFIX + 'confess followed by your message.'
+        return 'Hi! 👋 There.'
