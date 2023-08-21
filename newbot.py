@@ -2,6 +2,7 @@
 import discord
 from discord import app_commands
 from discord.ext import commands
+
 import responses
 
 # Config
@@ -69,11 +70,14 @@ def event_methods():
 
     @bot.event
     async def on_audit_log_entry_create(entry: discord.AuditLogEntry):
+        # We get the time of the entry in iso format
         time = entry.created_at.astimezone(tz=pytz.timezone('America/New_York')).isoformat()
 
+        # Log for the terminal
         print('\nServer log:')
         print(f" Server Nickname: {'No nickname' if (type(entry.user) is discord.user.User or type(entry.user) is None) else entry.user.nick} User: {entry.user.global_name} ID:{entry.user.name} | Action: {entry.action.name} | Date: {time.split('T')[0]} Time: {time.split('T')[1].split('.')[0]} EST\n")
 
+        # We check if we need to send the guild the log
         channel = entry.guild.get_channel(serverDict[entry.guild.id].audit_channel_id)
 
         if type(channel) is None:
@@ -93,7 +97,8 @@ def event_methods():
         elif isinstance(error, MissingRequiredArgument):
             print("Missing argument!")
         else:
-            raise error
+            print(error)
+            # raise error
 
 
     @bot.event
@@ -130,8 +135,7 @@ def event_methods():
                     
 
         # Message log
-        if not ( str(message.content).startswith(f'{COMMAND_PREFIX}confess') and isinstance(message.channel, discord.DMChannel) ):
-            print(f"\n\"{message.author.global_name}\" / \"{message.author}\" said: \"{str(message.content)}\" in \"{message.channel}\" server: \"{message.guild}\"")
+        print(f"\n\"{message.author.global_name}\" / \"{message.author}\" said: \"{str(message.content)}\" in \"{message.channel}\" server: \"{message.guild}\"")
 
         # This actually processes the commands since we overrode on_message()
         await bot.process_commands(message)
@@ -153,10 +157,21 @@ def dev_command_methods():
         save_servers()
         exit()
 
+    @dev_shutdown.error
+    async def dev_shutdown_error(context: commands.Context, error):
+        if not await bot.is_owner(context.author):
+            print(f'{context.author.name} is not the owner and cannot execute dev_shutdown')
+
     @bot.command(name='dev_saveservers')
     @commands.is_owner()
     async def dev_saveservers(ctx):
         save_servers()
+
+    @dev_saveservers.error
+    async def dev_saveservers_error(context: commands.Context, error):
+        if not await bot.is_owner(context.author):
+            print(f'{context.author.name} is not the owner and cannot execute dev_saveservers')
+
 
 
 def command_methods():
@@ -313,9 +328,9 @@ def slash_commands():
         else:
             print(f'/confess: {error}')
             await interaction.response.send_message('Uknown Error, please report')
-    
 
 
+# ! Depricated, need to implement new way of handling these
 async def answer_message(original_message):
     try:
         response = responses.handle_response(str(original_message.content))
