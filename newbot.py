@@ -75,7 +75,7 @@ def event_methods():
 
         # Log for the terminal
         print('\nServer log:')
-        print(f" Server Nickname: {'No nickname' if (type(entry.user) is discord.user.User or type(entry.user) is None) else entry.user.nick} User: {entry.user.global_name} ID:{entry.user.name} | Action: {entry.action.name} | Date: {time.split('T')[0]} Time: {time.split('T')[1].split('.')[0]} EST\n")
+        print(f" Guild: \"{entry.guild.name}\" id: {entry.guild.id} Server Nickname: {'No nickname' if (type(entry.user) is discord.user.User or type(entry.user) is None) else entry.user.nick} User: {entry.user.global_name} ID:{entry.user.name} | Action: {entry.action.name} | Date: {time.split('T')[0]} Time: {time.split('T')[1].split('.')[0]} EST\n")
 
         # We check if we need to send the guild the log
         channel = entry.guild.get_channel(serverDict[entry.guild.id].audit_channel_id)
@@ -93,17 +93,17 @@ def event_methods():
     @bot.event
     async def on_command_error(context, error):
         if isinstance(error, CommandNotFound):
-            print("Command not found!")
+            print("Command Error: Command not found!")
         elif isinstance(error, MissingRequiredArgument):
-            print("Missing argument!")
+            print("Command Error: Missing argument!")
         else:
-            print(error)
+            print(f'Command Error: \"{error}\"')
             # raise error
 
 
     @bot.event
     async def on_member_join(member: discord.Member):
-        print(member.global_name + f' joined the server {member.guild.name}')
+        print(f'\"{member.global_name}\" (id: {member.id}) joined the server {member.guild.name}')
 
 
     @bot.event
@@ -121,7 +121,7 @@ def event_methods():
 
         # Checks if a DM is a from a guild member
         is_found = False
-        if is_DM(message):
+        if is_DM(message.channel):
             for entry in serverDict:
                 temp_guild = bot.get_guild(entry)
                 temp_member = temp_guild.get_member(message.author.id)
@@ -153,19 +153,21 @@ def dev_command_methods():
 
     @bot.command(name='dev_shutdown')
     @commands.is_owner()
-    async def dev_shutdown(ctx):
+    async def dev_shutdown(context : commands.Context):
         save_servers()
+        await context.channel.send('⚠️ Servers have been saved and the bot server will be shutdown!')
         exit()
 
     @dev_shutdown.error
     async def dev_shutdown_error(context: commands.Context, error):
         if not await bot.is_owner(context.author):
-            print(f'{context.author.name} is not the owner and cannot execute dev_shutdown')
+            await context.channel.send(f'{context.author.name} is not the owner and cannot execute dev_shutdown')
 
     @bot.command(name='dev_saveservers')
     @commands.is_owner()
-    async def dev_saveservers(ctx):
+    async def dev_saveservers(context: commands.Context):
         save_servers()
+        await context.channel.send('Server data has been saved!')
 
     @dev_saveservers.error
     async def dev_saveservers_error(context: commands.Context, error):
@@ -176,70 +178,104 @@ def dev_command_methods():
 
 def command_methods():
     # Set channels
+    # ! set_welcome is depricated for now
     @bot.command(name='set_welcome')
     async def set_welcome(context: commands.Context):
-        if is_admin(context):
-            serverDict[context.guild.id].welcome_channel_id = context.channel.id
-            print(serverDict[context.guild.id].welcome_channel_id)
-            save_servers()
-            await context.channel.send('This channel is now the \"Welcome\" channel!')
-        else:
-            await context.channel.send('Sorry only an admin can do that 😔')
+        if not is_DM(context.channel):
+            if is_admin(context.author):
+                serverDict[context.guild.id].welcome_channel_id = context.channel.id
+                print(f'Guild: \"{context.guild.name}\" Welcome channel is now: {serverDict[context.guild.id].welcome_channel_id}')
+                save_servers()
+                await context.channel.send('This channel is now the \"Welcome\" channel!')
+            else:
+                await context.channel.send('Sorry only an admin can do that 😔')
     
+
     @bot.command(name='set_audit')
     async def set_audit(context: commands.Context):
-        if is_admin(context):
-            serverDict[context.guild.id].audit_channel_id = context.channel.id
-            print(serverDict[context.guild.id].audit_channel_id)
-            save_servers()
-            await context.channel.send('This channel is now the \"Audit Log\" channel!')
-        else:
-            await context.channel.send('Sorry only an admin can do that 😔')
+        if not is_DM(context.channel):
+            if is_admin(context.author):
+                serverDict[context.guild.id].audit_channel_id = context.channel.id
+                print(f'Guild: \"{context.guild.name}\" Audit Log channel is now: {serverDict[context.guild.id].audit_channel_id}')
+                save_servers()
+                await context.channel.send('This channel is now the \"Audit Log\" channel!')
+            else:
+                await context.channel.send('Sorry only an admin can do that 😔')
     
+
     @bot.command(name='set_confessions')
     async def set_confessions(context: commands.Context):
-        if is_admin(context):
-            serverDict[context.guild.id].confessions_channel_id = context.channel.id
-            print(serverDict[context.guild.id].confessions_channel_id)
-            save_servers()
-            await context.channel.send('This channel is now the \"Confessions\" channel!')
-        else:
-            await context.channel.send('Sorry only an admin can do that 😔')
+        if not is_DM(context.channel):
+            if is_admin(context.author):
+                serverDict[context.guild.id].confessions_channel_id = context.channel.id
+                print(f'Guild: \"{context.guild.name}\" Confessions channel is now: {serverDict[context.guild.id].confessions_channel_id}')
+                save_servers()
+                await context.channel.send('This channel is now the \"Confessions\" channel!')
+            else:
+                await context.channel.send('Sorry only an admin can do that 😔')
+
 
     # Set Settings
-    @bot.command(name='enableconfessions')
-    async def enable_confession(context: commands.Context, arg):
-        if is_admin(context):
-            if arg.lower() == 'true' or arg.lower() == 'false':
-                serverDict[context.guild.id].confessions_allowed = True if arg == 'true' else False
-                state = serverDict[context.guild.id].confessions_allowed
-                await context.channel.send('Confessions are now allowed!' if (state == True) else 'Confessions are no longer allowed')
+    @bot.command(name='enable_confessions')
+    async def enable_confessions(context: commands.Context, arg):
+        if not is_DM(context.channel):
+            if is_admin(context.author):
+                if arg.lower() == 'true' or arg.lower() == 'false':
+                    serverDict[context.guild.id].confessions_allowed = True if arg == 'true' else False
+                    state = serverDict[context.guild.id].confessions_allowed
+                    save_servers()
+                    await context.channel.send('Confessions are now allowed!' if (state == True) else 'Confessions are no longer allowed')
+                else:
+                    await context.send(f'The command is:\n{COMMAND_PREFIX}enable_confessions true')
             else:
-                await context.send(f'The command is:\n{COMMAND_PREFIX}canconfess true')
-        else:
-            await context.channel.send('Sorry only an admin can do that 😔')
+                await context.channel.send('Sorry only an admin can do that 😔')
 
-    @enable_confession.error
-    async def enableconfession_error(context: commands.Context, error):
-        if is_admin(context):
-            await context.send(f'The command is:\n{COMMAND_PREFIX}enableconfessions true')
-        else:
-            await context.channel.send('Sorry only an admin can do that 😔')
+    @enable_confessions.error
+    async def enableconfessions_error(context: commands.Context, error):
+        if not is_DM(context.channel):
+            if is_admin(context.author):
+                await context.send(f'The command is:\n{COMMAND_PREFIX}enable_confessions true')
+            else:
+                await context.channel.send('Sorry only an admin can do that 😔')
+
+
+    @bot.command(name='enable_audit')
+    async def enable_audit(context: commands.Context, arg):
+        if not is_DM(context.channel):
+            if is_admin(context.author):
+                if arg.lower() == 'true' or arg.lower() == 'false':
+                    serverDict[context.guild.id].audit_enabled = True if arg == 'true' else False
+                    state = serverDict[context.guild.id].audit_enabled
+                    save_servers()
+                    await context.channel.send('Audit Logs are now enabled!' if (state == True) else 'Audit Logs are now disabled')
+                else:
+                    await context.send(f'The command is:\n{COMMAND_PREFIX}enable_audit true')
+            else:
+                await context.channel.send('Sorry only an admin can do that 😔')
+    
+    @enable_audit.error
+    async def enable_audit_error(context: commands.Context, error):
+        if not is_DM(context.channel):
+            if is_admin(context.author):
+                await context.send(f'The command is:\n{COMMAND_PREFIX}enable_audit true')
+            else:
+                await context.channel.send('Sorry only an admin can do that 😔')
+
 
 
     @bot.command(name='repeat')
     async def repeat(context: commands.Context, *, arg):
-        if not is_DM(context):
+        if not is_DM(context.channel):
             await context.send(arg)
     
     @repeat.error
     async def repeat_error(context: commands.Context, error):
-        if not is_DM(context):
+        if not is_DM(context.channel):
             await context.channel.send(f'The command should go:\n{COMMAND_PREFIX}repeat I will repeat this!')
 
     @bot.command(name='standoff')
     async def standoff(context: commands.Context, *arg):
-        if not is_DM(context):
+        if not is_DM(context.channel):
             if len(arg) == 1:
                 if context.author.nick is None:
                     player1 = context.author.display_name
@@ -281,13 +317,14 @@ def command_methods():
 
     @bot.command(name='help')
     async def help(context: commands.Context):
-        if not isinstance(context.channel, discord.DMChannel):
-            await context.send(f'>>> 🍰 Hi! My current commands are\n**{COMMAND_PREFIX}standoff** Want to do a cowboy stand off against a friend? 🤠\n**/confess** in the confessions channel to send an anonymous confessions\nIf you need help with individual commands type the command!')
+        if not is_DM(context.channel):
+            await context.send(f'>>> 🍰 Hi! My current commands are:\n**{COMMAND_PREFIX}repeat** I will repeat anything you say\n**{COMMAND_PREFIX}standoff** Want to do a cowboy stand off against a friend? 🤠\n**/confess** in the confessions channel to send an anonymous confessions\n\n**For admins**\n**{COMMAND_PREFIX}purge** Will delete x number of messages from the current channel\n**{COMMAND_PREFIX}set_welcome** Sets the Welcome channel\n**{COMMAND_PREFIX}set_audit** Sets the AuditLog channel \n**{COMMAND_PREFIX}set_confessions** Sets the Confessions channel\n**{COMMAND_PREFIX}enable_confessions** Enable of disable confessions for this server\n\nIf you need help with individual commands type the command!')
 
-        # Usage: !purge [limit]
-    @bot.command(name='purge')
+        
+    # Usage: !purge [limit]
+    @bot.command(name='purgee')
     async def purge_channel(context: commands.Context, *args):
-        if not is_DM(context):
+        if not is_DM(context.channel):
             test_channel_ids: dict = {'general': 1098216731111067731, 'welcome_test' : 1136729265530998884, 'log_audit' : 1136729290709405887}  # Test channel IDs for krayon
             live_channel_ids: dict = {'Bot-Testing': 1136013944029462538}  # Live channel IDs where purging is allowed:
             permitted_channels: list = [channel for channel in test_channel_ids.values()]
@@ -296,7 +333,7 @@ def command_methods():
                 limit = int(args[0]) if args else 200  # If user specifies limit, else default to 200
                 print(f'Purge command called in channel "{channel.name}" for {limit} messages.')
                 author: discord.Member = context.author
-                if is_permitted_to_purge(context):  # User check
+                if is_permitted_to_purge(context.author):  # User check
                     await channel.purge(limit=limit+1)
             else:
                 print(f'Channel "{channel.name}" is not eligible for purging.')
@@ -304,10 +341,47 @@ def command_methods():
             await context.author.send('Sorry, you can only purge on a server')
 
 
+    @bot.command(name='purge')
+    async def purge(context: commands.Context, arg):
+        if not is_DM(context.channel):
+            if is_permitted_to_purge(context.author):
+                limit = int(arg)
+                await send_purge_audit(context.author, context.guild.id, limit, context.channel)
+                await context.channel.purge(limit=limit+1)
+            else:
+                await context.channel.send('Sorry, only an admin can purge')
+    
+    @purge.error
+    async def purge(context: commands.Context, error):
+        if not is_DM(context.channel):
+            if is_permitted_to_purge(context.author):
+                await context.channel.send(f'The usage of the command is:\n{COMMAND_PREFIX}purge 5')
+            else:
+                await context.channel.send('Sorry, only an admin can purge')
+
+
+    @bot.command(name='embed')
+    async def embed(context: commands.Context, title: str, message: str):
+        if not is_DM(context.channel):
+            if context.author.guild_permissions.manage_channels:
+                embededMessage = discord.Embed(title=f"🫧  {title}", description=message, color=0x9dc8d1)
+                embededMessage.set_author(name=f'From: {context.author.global_name}')
+                await context.channel.send(embed=embededMessage)
+            else:
+                await context.channel.send(f'Sorry, only an admin can do that')
+
+    @embed.error
+    async def embed_error(context: commands.Context, error):
+        if not is_DM(context.channel):
+            if not context.author.guild_permissions.manage_channels:
+                await context.channel.send(f'Sorry, only an admin can do that')
+            else:
+                await context.channel.send(f'The command is:\n{COMMAND_PREFIX}embed "My Embed Title" "I would like to say cake is great!  🍰"')
+
 def slash_commands():
 
     @bot.tree.command(name='confess')
-    @app_commands.check(is_confessions_channel)
+    @app_commands.check(can_confess)
     @app_commands.describe(confession = 'What would you like to confess?')
     async def confess(interaction: discord.Interaction, confession: str):
         if '@everyone' in confession:
@@ -341,35 +415,32 @@ async def answer_message(original_message):
         print(e)
 
 
+async def send_purge_audit(member: discord.Member, guild_id: int, limit : int, channel):
+    if serverDict.__contains__(guild_id):
+        if serverDict[guild_id].audit_enabled and not serverDict[guild_id].audit_channel_id == 0:
+            log = f"{member.global_name} called purge for {limit} messages in \"{channel.name}\"\n"
+            embededLog = discord.Embed(title="🫧", description=log, color=0x9dc8d1)
+            await bot.get_channel(serverDict[guild_id].audit_channel_id).send(embed=embededLog)
+
+
 # On these methods context means either context from a command or message
 def get_guild(context: commands.Context):
     return bot.get_guild(context.guild.id)
-
-
-def is_member_from_guild(context: commands.Context):
-    member = bot.get_guild(context.guild.id).get_member(context.author.id)
-    if not member:
-        return False
-    else:
-        return True
 
 
 def is_owner(context: commands.Context):
     return context.author.id == context.guild.owner_id
 
 
-def is_admin(context: commands.Context):
-    return context.author.guild_permissions.administrator
+def is_admin(member: discord.Member):
+    return member.guild_permissions.administrator
 
 
-def is_DM(context: commands.Context):
-    return isinstance(context.channel, discord.DMChannel)
-
-def is_DM(message: discord.Message):
-    return isinstance(message.channel, discord.DMChannel)
+def is_DM(channel: discord.channel):
+    return isinstance(channel, discord.DMChannel)
 
 
-def is_confessions_channel(interaction : discord.Interaction):
+def can_confess(interaction : discord.Interaction):
     if isinstance(interaction.channel, discord.DMChannel):
         return False
     elif serverDict[interaction.guild.id].confessions_allowed and serverDict[interaction.guild.id].confessions_channel_id == interaction.channel.id:
@@ -379,17 +450,7 @@ def is_confessions_channel(interaction : discord.Interaction):
 
 
 def is_permitted_to_purge(member: discord.Member):
-    permitted_roles = ['Owner', 'Admin']
-    member_roles = member.roles
-    for role in member_roles:
-        if role.name in permitted_roles:
-            print(f'User "{member.global_name}" is eligible to purge.')
-            return True
-    print(f'User "{member.global_name}" is not eligible to purge.')  # TODO: Send in text channel
-    return False
-
-def is_permitted_to_purge(context: commands.Context):
-    return context.author.guild_permissions.administrator
+    return member.guild_permissions.administrator
 
 # Server information saving and loading
 def save_servers():
@@ -416,7 +477,7 @@ def load_servers():
             server.load_data(jsondict[str(key)])
             serverDict[server.id] = server
         
-        print('Servers:')
+        print('Servers Loaded:')
         for key in serverDict:
             print(f'\"{serverDict[key]}\"')
 
@@ -424,6 +485,15 @@ def load_servers():
     
     print('Server data was loaded')
 
+
+def is_welcome_set(guild_id: int):
+    pass
+
+def is_audit_set(guild_id: int):
+    pass
+
+def if_confessions_set(guild_id: int):
+    pass
 
 # Classes
 class Server:
@@ -449,5 +519,16 @@ class Server:
         self.audit_enabled = dictionary['audit_enabled']
 
 
-# TODO: Add confession checking to error so we know what the error was (aka confessions channel not set). Or show commmand only on confessions channel
-# TODO: Fix confessions
+# TODO: If confessions are enabled but there is no channel set send message that that is the case
+# TODO: Stop from enabling confessions of audit if no channel is set
+
+# * Commit:
+# - is_DM now takes in a channel
+# - is_permitted_to_purge now takes in a member
+# - is_allowed_to_confess is now can_confess
+# - is_admin now takes in a member
+# - Restructured some methods and made sure commands don't work if it's a DM
+# - Added embed command
+# - removed is_member_from_guild function
+# - modified purge method (old purge is still in code, can be called using purgee)
+# - 
