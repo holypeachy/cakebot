@@ -523,6 +523,4 @@ class Server:
 # TODO: Stop from enabling confessions of audit if no channel is set
 
 # * Commit:
-# - Changed the name of the test bot token
-# - In newbot.py importing TEST_TOKEN as TOKEN
-# - Added config.py to .gitignore and removed it from git
+# - Removed config.py from being tracked
