@@ -6,8 +6,8 @@ from discord.ext import commands
 import responses
 
 # Config
-from config import TOKEN
-from config import COMMAND_PREFIX
+from config import TEST_TOKEN as TOKEN
+from config import TEST_COMMAND_PREFIX as COMMAND_PREFIX
 
 # Errors
 from discord.ext.commands import CommandNotFound
@@ -523,12 +523,6 @@ class Server:
 # TODO: Stop from enabling confessions of audit if no channel is set
 
 # * Commit:
-# - is_DM now takes in a channel
-# - is_permitted_to_purge now takes in a member
-# - is_allowed_to_confess is now can_confess
-# - is_admin now takes in a member
-# - Restructured some methods and made sure commands don't work if it's a DM
-# - Added embed command
-# - removed is_member_from_guild function
-# - modified purge method (old purge is still in code, can be called using purgee)
-# - 
+# - Changed the name of the test bot token
+# - In newbot.py importing TEST_TOKEN as TOKEN
+# - Added config.py to .gitignore and removed it from git
