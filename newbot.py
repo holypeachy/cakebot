@@ -156,7 +156,7 @@ def dev_command_methods():
     async def dev_shutdown(context : commands.Context):
         save_servers()
         await context.channel.send('⚠️ Servers have been saved and the bot server will be shutdown!')
-        exit()
+        await bot.close()
 
     @dev_shutdown.error
     async def dev_shutdown_error(context: commands.Context, error):
@@ -167,7 +167,7 @@ def dev_command_methods():
     @commands.is_owner()
     async def dev_saveservers(context: commands.Context):
         save_servers()
-        await context.channel.send('Server data has been saved!')
+        await context.channel.send('⚠️ Server data has been saved!')
 
     @dev_saveservers.error
     async def dev_saveservers_error(context: commands.Context, error):
@@ -508,7 +508,7 @@ class Server:
         self.audit_enabled = False
     
     def __str__(self) -> str:
-        return f'id: {self.id}  welcome_channel_id: {self.welcome_channel_id} audit_channel_id: {self.audit_channel_id} confessions_channel_id: {self.confessions_channel_id} confessions_allowed: {self.confessions_allowed} audit_enabled; {self.audit_enabled}'
+        return f'id: {self.id}  welcome_channel_id: {self.welcome_channel_id}  audit_channel_id: {self.audit_channel_id}  confessions_channel_id: {self.confessions_channel_id}  confessions_allowed: {self.confessions_allowed}  audit_enabled: {self.audit_enabled}'
 
     def load_data(self, dictionary):
         self.id = dictionary['id']
@@ -523,4 +523,5 @@ class Server:
 # TODO: Stop from enabling confessions of audit if no channel is set
 
 # * Commit:
+# - Bot now logs out to shutdown instead of python's exit method
 # - 
