@@ -3,9 +3,10 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
+# Other scripts
 import responses
 
-# Config
+# Settings from config.py
 from config import TEST_TOKEN as TOKEN
 from config import TEST_COMMAND_PREFIX as COMMAND_PREFIX
 
@@ -36,15 +37,17 @@ def start_bot():
     global serverDict 
     serverDict = dict()
 
+    # Loads the stored server data from the json file
     load_servers()
 
+    # These methods are organizational and contain the events and commands that will be registered async
     event_methods()
 
     dev_command_methods()
 
     command_methods()
 
-    slash_commands()
+    slash_commands_methods()
 
     # Run bot
     bot.run(TOKEN)
@@ -78,10 +81,14 @@ def event_methods():
         print(f" Guild: \"{entry.guild.name}\" id: {entry.guild.id} Server Nickname: {'No nickname' if (type(entry.user) is discord.user.User or type(entry.user) is None) else entry.user.nick} User: {entry.user.global_name} ID:{entry.user.name} | Action: {entry.action.name} | Date: {time.split('T')[0]} Time: {time.split('T')[1].split('.')[0]} EST\n")
 
         # We check if we need to send the guild the log
-        channel = entry.guild.get_channel(serverDict[entry.guild.id].audit_channel_id)
+        if serverDict[entry.guild.id].audit_enabled == True:
+            channel = entry.guild.get_channel(serverDict[entry.guild.id].audit_channel_id)
 
-        if type(channel) is None:
-            print(f'Server \"{entry.guild.name}\" has not set up a AuditLog channel yet!')
+        if channel is None:
+            if serverDict[entry.guild.id].audit_channel_id == 0:
+                print(f'Server \"{entry.guild.name}\" has not set up a AuditLog channel yet!')
+            else:
+                print(f'Server \"{entry.guild.name}\" has a registered AuditLog Channel that is not found in the server!')
         elif serverDict[entry.guild.id].audit_enabled == False:
             print(f'Audit log disabled for  \"{entry.guild.name}\" guild')
         else:
@@ -112,10 +119,17 @@ def event_methods():
         serverDict[guild.id] = Server(guild.id)
         save_servers()
 
+    @bot.event
+    async def on_guild_remove(guild: discord.Guild):
+        print(f'{bot.user} has left guild \"{guild.name}\" id: {guild.id}')
+        if serverDict.__contains__(guild.id):
+            del serverDict[guild.id]
+            save_servers()
+
 
     @bot.event
     async def on_message(message: discord.Message):
-        # Ignores Bot's messages
+        # Ignores Bot's own messages
         if message.author == bot.user:
             return
 
@@ -178,23 +192,10 @@ def dev_command_methods():
 
 def command_methods():
     # Set channels
-    # ! set_welcome is depricated for now
-    @bot.command(name='set_welcome')
-    async def set_welcome(context: commands.Context):
-        if not is_DM(context.channel):
-            if is_admin(context.author):
-                serverDict[context.guild.id].welcome_channel_id = context.channel.id
-                print(f'Guild: \"{context.guild.name}\" Welcome channel is now: {serverDict[context.guild.id].welcome_channel_id}')
-                save_servers()
-                await context.channel.send('This channel is now the \"Welcome\" channel!')
-            else:
-                await context.channel.send('Sorry only an admin can do that 😔')
-    
-
     @bot.command(name='set_audit')
     async def set_audit(context: commands.Context):
         if not is_DM(context.channel):
-            if is_admin(context.author):
+            if can_manage_channels(context.author):
                 serverDict[context.guild.id].audit_channel_id = context.channel.id
                 print(f'Guild: \"{context.guild.name}\" Audit Log channel is now: {serverDict[context.guild.id].audit_channel_id}')
                 save_servers()
@@ -203,10 +204,23 @@ def command_methods():
                 await context.channel.send('Sorry only an admin can do that 😔')
     
 
+    # ! set_welcome is depricated for now
+    @bot.command(name='set_welcome')
+    async def set_welcome(context: commands.Context):
+        if not is_DM(context.channel):
+            if can_manage_channels(context.author):
+                serverDict[context.guild.id].welcome_channel_id = context.channel.id
+                print(f'Guild: \"{context.guild.name}\" Welcome channel is now: {serverDict[context.guild.id].welcome_channel_id}')
+                save_servers()
+                await context.channel.send('This channel is now the \"Welcome\" channel!')
+            else:
+                await context.channel.send('Sorry only an admin can do that 😔')
+
+
     @bot.command(name='set_confessions')
     async def set_confessions(context: commands.Context):
         if not is_DM(context.channel):
-            if is_admin(context.author):
+            if can_manage_channels(context.author):
                 serverDict[context.guild.id].confessions_channel_id = context.channel.id
                 print(f'Guild: \"{context.guild.name}\" Confessions channel is now: {serverDict[context.guild.id].confessions_channel_id}')
                 save_servers()
@@ -215,34 +229,13 @@ def command_methods():
                 await context.channel.send('Sorry only an admin can do that 😔')
 
 
-    # Set Settings
-    @bot.command(name='enable_confessions')
-    async def enable_confessions(context: commands.Context, arg):
-        if not is_DM(context.channel):
-            if is_admin(context.author):
-                if arg.lower() == 'true' or arg.lower() == 'false':
-                    serverDict[context.guild.id].confessions_allowed = True if arg == 'true' else False
-                    state = serverDict[context.guild.id].confessions_allowed
-                    save_servers()
-                    await context.channel.send('Confessions are now allowed!' if (state == True) else 'Confessions are no longer allowed')
-                else:
-                    await context.send(f'The command is:\n{COMMAND_PREFIX}enable_confessions true')
-            else:
-                await context.channel.send('Sorry only an admin can do that 😔')
-
-    @enable_confessions.error
-    async def enableconfessions_error(context: commands.Context, error):
-        if not is_DM(context.channel):
-            if is_admin(context.author):
-                await context.send(f'The command is:\n{COMMAND_PREFIX}enable_confessions true')
-            else:
-                await context.channel.send('Sorry only an admin can do that 😔')
-
-
+    # Enable Settings
     @bot.command(name='enable_audit')
     async def enable_audit(context: commands.Context, arg):
         if not is_DM(context.channel):
-            if is_admin(context.author):
+            if can_manage_channels(context.author):
+                if serverDict[context.guild.id].confessions_channel_id == 0:
+                    await context.send(f'Please set an Audit Log channel before enabling it! Use the following command to do so:\n**{COMMAND_PREFIX}set_audit**')
                 if arg.lower() == 'true' or arg.lower() == 'false':
                     serverDict[context.guild.id].audit_enabled = True if arg == 'true' else False
                     state = serverDict[context.guild.id].audit_enabled
@@ -256,11 +249,36 @@ def command_methods():
     @enable_audit.error
     async def enable_audit_error(context: commands.Context, error):
         if not is_DM(context.channel):
-            if is_admin(context.author):
+            if can_manage_channels(context.author):
                 await context.send(f'The command is:\n{COMMAND_PREFIX}enable_audit true')
             else:
                 await context.channel.send('Sorry only an admin can do that 😔')
 
+
+    @bot.command(name='enable_confessions')
+    async def enable_confessions(context: commands.Context, arg):
+        if not is_DM(context.channel):
+            if can_manage_channels(context.author):
+                if serverDict[context.guild.id].confessions_channel_id == 0:
+                    await context.send(f'Please set a Confessions channel first! Use the following command to do so:\n**{COMMAND_PREFIX}set_confessions**')
+                else:
+                    if arg.lower() == 'true' or arg.lower() == 'false':
+                        serverDict[context.guild.id].confessions_allowed = True if arg == 'true' else False
+                        state = serverDict[context.guild.id].confessions_allowed
+                        save_servers()
+                        await context.channel.send('Confessions are now allowed!' if (state == True) else 'Confessions are no longer allowed')
+                    else:
+                        await context.send(f'The command is:\n{COMMAND_PREFIX}enable_confessions true')
+            else:
+                await context.channel.send('Sorry only an admin can do that 😔')
+
+    @enable_confessions.error
+    async def enableconfessions_error(context: commands.Context, error):
+        if not is_DM(context.channel):
+            if can_manage_channels(context.author):
+                await context.send(f'The command is:\n{COMMAND_PREFIX}enable_confessions true')
+            else:
+                await context.channel.send('Sorry only an admin can do that 😔')
 
 
     @bot.command(name='repeat')
@@ -378,7 +396,7 @@ def command_methods():
             else:
                 await context.channel.send(f'The command is:\n{COMMAND_PREFIX}embed "My Embed Title" "I would like to say cake is great!  🍰"')
 
-def slash_commands():
+def slash_commands_methods():
 
     @bot.tree.command(name='confess')
     @app_commands.check(can_confess)
@@ -393,15 +411,19 @@ def slash_commands():
     
     @confess.error
     async def confess_error(interaction : discord.Interaction, error):
-        if isinstance(interaction.channel, discord.DMChannel):
+        if is_DM(interaction.channel):
             await interaction.response.send_message('You can only confess in a server with a confessions channel!', ephemeral=True)
+        elif serverDict[interaction.guild.id].confessions_channel_id == 0:
+            await interaction.response.send_message('Confessions channel is not set for this server, please tell an admin to set a confessions channel!', ephemeral=True)
         elif not serverDict[interaction.guild.id].confessions_allowed:
-            await interaction.response.send_message('Sorry, confessions are not allowed on this server, tell an admin to enable it', ephemeral=True)
+            await interaction.response.send_message('Sorry, confessions are not allowed on this server, tell an admin to enable it.', ephemeral=True)
+        elif bot.get_channel(serverDict[interaction.guild.id].confessions_channel_id) is None:
+            await interaction.response.send_message('A Confessions channel is set but it is not found in this server (could\'ve been deleted). Please tell an admin about this problem.', ephemeral=True)
         elif not serverDict[interaction.guild.id].confessions_channel_id == interaction.channel.id:
-            await interaction.response.send_message('Sorry, please do your confession on the confessions channel', ephemeral=True)
+            await interaction.response.send_message('Sorry, please do your confession on the confessions channel.', ephemeral=True)
         else:
             print(f'/confess: {error}')
-            await interaction.response.send_message('Uknown Error, please report')
+            await interaction.response.send_message('Uknown Error, please report to admin or dev.')
 
 
 # ! Depricated, need to implement new way of handling these
@@ -418,9 +440,12 @@ async def answer_message(original_message):
 async def send_purge_audit(member: discord.Member, guild_id: int, limit : int, channel):
     if serverDict.__contains__(guild_id):
         if serverDict[guild_id].audit_enabled and not serverDict[guild_id].audit_channel_id == 0:
-            log = f"{member.global_name} called purge for {limit} messages in \"{channel.name}\"\n"
-            embededLog = discord.Embed(title="🫧", description=log, color=0x9dc8d1)
-            await bot.get_channel(serverDict[guild_id].audit_channel_id).send(embed=embededLog)
+            if type(bot.get_channel(serverDict[guild_id].audit_channel_id)) is None:
+                log = f"{member.global_name} called purge for {limit} messages in \"{channel.name}\"\n"
+                embededLog = discord.Embed(title="🫧", description=log, color=0x9dc8d1)
+                await bot.get_channel(serverDict[guild_id].audit_channel_id).send(embed=embededLog)
+            else:
+                print(f'Guild {bot.get_guild(guild_id).name} has an Audit Log channel registered but it cannot be found in the guild.')
 
 
 # On these methods context means either context from a command or message
@@ -432,8 +457,8 @@ def is_owner(context: commands.Context):
     return context.author.id == context.guild.owner_id
 
 
-def is_admin(member: discord.Member):
-    return member.guild_permissions.administrator
+def can_manage_channels(member: discord.Member):
+    return member.guild_permissions.manage_channels
 
 
 def is_DM(channel: discord.channel):
@@ -442,6 +467,8 @@ def is_DM(channel: discord.channel):
 
 def can_confess(interaction : discord.Interaction):
     if isinstance(interaction.channel, discord.DMChannel):
+        return False
+    elif bot.get_channel(serverDict[interaction.guild.id].confessions_channel_id) is None:
         return False
     elif serverDict[interaction.guild.id].confessions_allowed and serverDict[interaction.guild.id].confessions_channel_id == interaction.channel.id:
         return True
@@ -519,9 +546,10 @@ class Server:
         self.audit_enabled = dictionary['audit_enabled']
 
 
-# TODO: If confessions are enabled but there is no channel set send message that that is the case
-# TODO: Stop from enabling confessions of audit if no channel is set
+# TODO: Add enable welcome, and add welcome messages
 
 # * Commit:
-# - Bot now logs out to shutdown instead of python's exit method
-# - 
+# - is_admin is now can_manage_channels
+# - Added some error messages for when audit logs are sent and the channel registered is not found in the guild
+# - Now if you confess and the set channel is not found the bot will tell you so
+# - Added on_guild_remove event which deletes the guild from the server dictionary
