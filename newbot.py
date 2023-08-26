@@ -87,11 +87,12 @@ def event_methods():
         if serverDict[entry.guild.id].audit_enabled == True:
             channel = entry.guild.get_channel(serverDict[entry.guild.id].audit_channel_id)
 
-        if channel is None and serverDict[entry.guild.id].audit_enabled == True:
-            if serverDict[entry.guild.id].audit_channel_id == 0:
-                print(f'Server \"{entry.guild.name}\" has not set up a AuditLog channel yet!')
-            else:
-                print(f'Server \"{entry.guild.name}\" has a registered AuditLog Channel that is not found in the server!')
+            if channel is None:
+                if serverDict[entry.guild.id].audit_channel_id == 0:
+                    print(f'Server \"{entry.guild.name}\" has not set up a AuditLog channel yet!')
+                else:
+                    print(f'Server \"{entry.guild.name}\" has a registered AuditLog Channel that is not found in the server!')
+
         elif serverDict[entry.guild.id].audit_enabled == False:
             print(f'Audit log disabled for  \"{entry.guild.name}\" guild')
         else:
