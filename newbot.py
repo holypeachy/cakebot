@@ -87,7 +87,7 @@ def event_methods():
         if serverDict[entry.guild.id].audit_enabled == True:
             channel = entry.guild.get_channel(serverDict[entry.guild.id].audit_channel_id)
 
-        if channel is None:
+        if channel is None and serverDict[entry.guild.id].audit_enabled == True:
             if serverDict[entry.guild.id].audit_channel_id == 0:
                 print(f'Server \"{entry.guild.name}\" has not set up a AuditLog channel yet!')
             else:
