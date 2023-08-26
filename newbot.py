@@ -24,6 +24,10 @@ SUFYAAN_ID = 851221324126093382
 
 TAYIMO_ID = 403249158187778067
 
+serverDict = dict()
+welcomeDict = dict()
+bot = None
+
 def start_bot():
     # Intents
     my_intents = discord.Intents.default()
@@ -34,11 +38,11 @@ def start_bot():
     global bot
     bot = commands.Bot(COMMAND_PREFIX, intents=my_intents, help_command=None)
 
-    global serverDict 
-    serverDict = dict()
-
     # Loads the stored server data from the json file
     load_servers()
+
+    load_welcome_messages()
+
 
     # These methods are organizational and contain the events and commands that will be registered async
     event_methods()
@@ -51,7 +55,6 @@ def start_bot():
 
     # Run bot
     bot.run(TOKEN)
-
 
 
 def event_methods():
@@ -110,7 +113,20 @@ def event_methods():
 
     @bot.event
     async def on_member_join(member: discord.Member):
-        print(f'\"{member.global_name}\" (id: {member.id}) joined the server {member.guild.name}')
+
+        print(f'\"{member.global_name}\" (id: {member.id}) joined the server {member.guild.name}\n')
+
+        if serverDict.__contains__(member.guild.id):
+            serverInfo = serverDict[member.guild.id]
+            if serverInfo.welcome_enabled:
+                welcome_channel = bot.get_channel(serverInfo.welcome_channel_id)
+                if welcome_channel is None:
+                    print(f'Welcome channel for guild {member.guild.name} is enabled but the stored channel cannot be found')
+                else:
+                    num = random.randint(1, len(welcomeDict))
+                    welcome_message = welcomeDict[str(num)]
+                    welcome_message = welcome_message.replace('{user}', f'<@{member.id}>')
+                    await welcome_channel.send('> ## ' + welcome_message)
 
 
     @bot.event
@@ -189,7 +205,6 @@ def dev_command_methods():
             print(f'{context.author.name} is not the owner and cannot execute dev_saveservers')
 
 
-
 def command_methods():
     # Set channels
     @bot.command(name='set_audit')
@@ -251,6 +266,31 @@ def command_methods():
         if not is_DM(context.channel):
             if can_manage_channels(context.author):
                 await context.send(f'The command is:\n{COMMAND_PREFIX}enable_audit true')
+            else:
+                await context.channel.send('Sorry only an admin can do that 😔')
+
+
+    @bot.command(name='enable_welcome')
+    async def enable_welcome(context: commands.Context, arg):
+        if not is_DM(context.channel):
+            if can_manage_channels(context.author):
+                if serverDict[context.guild.id].welcome_channel_id == 0:
+                    await context.send(f'Please set a Welcome channel before enabling it! Use the following command to do so:\n**{COMMAND_PREFIX}set_welcome**')
+                if arg.lower() == 'true' or arg.lower() == 'false':
+                    serverDict[context.guild.id].welcome_enabled = True if arg == 'true' else False
+                    state = serverDict[context.guild.id].welcome_enabled
+                    save_servers()
+                    await context.channel.send('Welcome messages are now enabled!' if (state == True) else 'Welcome messages are now disabled')
+                else:
+                    await context.send(f'The command is:\n{COMMAND_PREFIX}enable_welcome true')
+            else:
+                await context.channel.send('Sorry only an admin can do that 😔')
+    
+    @enable_welcome.error
+    async def enable_welcome_error(context: commands.Context, error):
+        if not is_DM(context.channel):
+            if can_manage_channels(context.author):
+                await context.send(f'The command is:\n{COMMAND_PREFIX}enable_welcome true')
             else:
                 await context.channel.send('Sorry only an admin can do that 😔')
 
@@ -336,7 +376,7 @@ def command_methods():
     @bot.command(name='help')
     async def help(context: commands.Context):
         if not is_DM(context.channel):
-            await context.send(f'>>> 🍰 Hi! My current commands are:\n**{COMMAND_PREFIX}repeat** I will repeat anything you say\n**{COMMAND_PREFIX}standoff** Want to do a cowboy stand off against a friend? 🤠\n**/confess** in the confessions channel to send an anonymous confessions\n\n**For Testers**\n**{COMMAND_PREFIX}embed** Allows you to create an embeded message\n\n**For admins**\n**{COMMAND_PREFIX}purge** Will delete x number of messages from the current channel\n**{COMMAND_PREFIX}set_welcome** Sets the Welcome channel\n**{COMMAND_PREFIX}set_audit** Sets the AuditLog channel \n**{COMMAND_PREFIX}set_confessions** Sets the Confessions channel\n**{COMMAND_PREFIX}enable_confessions** Enable of disable confessions for this server\n**{COMMAND_PREFIX}enable_audit** Enable of disable Audit Logs in this server\n\nIf you need help with individual commands type the command!')
+            await context.send(f'>>> 🍰 Hi! My current commands are:\n**{COMMAND_PREFIX}repeat** I will repeat anything you say\n**{COMMAND_PREFIX}standoff** Want to do a cowboy stand off against a friend? 🤠\n**/confess** in the confessions channel to send an anonymous confessions\n\n**For Testers**\n**{COMMAND_PREFIX}embed** Allows you to create an embeded message\n**/poll** Allows you to create polls\n\n**For admins**\n**{COMMAND_PREFIX}purge** Will delete x number of messages from the current channel\n**{COMMAND_PREFIX}set_welcome** Sets the Welcome channel\n**{COMMAND_PREFIX}set_audit** Sets the AuditLog channel \n**{COMMAND_PREFIX}set_confessions** Sets the Confessions channel\n**{COMMAND_PREFIX}enable_confessions** Enable of disable confessions for this server\n**{COMMAND_PREFIX}enable_audit** Enable of disable Audit Logs in this server\n\nIf you need help with individual commands type the command!')
 
         
     # Usage: !purge [limit]
@@ -383,7 +423,7 @@ def command_methods():
         if not is_DM(context.channel):
             if context.author.guild_permissions.manage_channels:
                 embededMessage = discord.Embed(title=f"🫧  {title}", description=message, color=0x9dc8d1)
-                embededMessage.set_author(name=f'From: {context.author.global_name}')
+                embededMessage.set_author(name=f'{context.author.global_name}', icon_url=context.author.avatar.url)
                 await context.channel.send(embed=embededMessage)
             else:
                 await context.channel.send(f'Sorry, only an admin can do that')
@@ -396,9 +436,11 @@ def command_methods():
             else:
                 await context.channel.send(f'The command is:\n{COMMAND_PREFIX}embed "My Embed Title" "I would like to say cake is great!  🍰"')
 
+
 def slash_commands_methods():
 
-    @bot.tree.command(name='confess')
+    @bot.tree.command(name='confess', description='Tell a secret while remaining anonymous')
+    @app_commands.guild_only()
     @app_commands.check(can_confess)
     @app_commands.describe(confession = 'What would you like to confess?')
     async def confess(interaction: discord.Interaction, confession: str):
@@ -411,9 +453,7 @@ def slash_commands_methods():
     
     @confess.error
     async def confess_error(interaction : discord.Interaction, error):
-        if is_DM(interaction.channel):
-            await interaction.response.send_message('You can only confess in a server with a confessions channel!', ephemeral=True)
-        elif serverDict[interaction.guild.id].confessions_channel_id == 0:
+        if serverDict[interaction.guild.id].confessions_channel_id == 0:
             await interaction.response.send_message('Confessions channel is not set for this server, please tell an admin to set a confessions channel!', ephemeral=True)
         elif not serverDict[interaction.guild.id].confessions_allowed:
             await interaction.response.send_message('Sorry, confessions are not allowed on this server, tell an admin to enable it.', ephemeral=True)
@@ -423,7 +463,36 @@ def slash_commands_methods():
             await interaction.response.send_message('Sorry, please do your confession on the confessions channel.', ephemeral=True)
         else:
             print(f'/confess: {error}')
-            await interaction.response.send_message('Uknown Error, please report to admin or dev.')
+            await interaction.response.send_message('Uknown Error, please report to admin or dev.', ephemeral=True)
+
+    @bot.tree.command(name='poll', description='Make a poll')
+    @app_commands.guild_only()
+    @app_commands.check(can_poll)
+    @app_commands.describe(title= 'The title of the poll',question = 'What would you like to ask?', options = 'Add options separated by a \"/\"')
+    async def poll( interaction: discord.Interaction, title: str, question: str, options: str):
+        options = options.split('/')
+        emojis = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟']
+        if len(options) >= 2 and len(options) <= 10:
+            embed_message = f'{question}\n\n'
+            for i in range(1, len(options) + 1):
+                embed_message += f'{emojis[i-1]}. {options[i-1]}\n'
+            embeded_poll = discord.Embed(title=f"🫧  Poll: {title}", description=embed_message, color=0x9dc8d1)
+            embeded_poll.set_author(name=f'{interaction.user.global_name}', icon_url=interaction.user.avatar.url)
+            poll_message = await interaction.channel.send(embed=embeded_poll)
+            for i in range(1, len(options) + 1):
+                await poll_message.add_reaction(emojis[i-1])
+            await interaction.response.send_message(f'Poll was succesfully posted!', ephemeral=True)
+        else:
+            await interaction.response.send_message(f'Sorry, the number of options needs to be between 2-10. Your input had {len(options)} options', ephemeral=True)
+    
+    @poll.error
+    async def poll_error(interaction : discord.Interaction, error):
+        if not can_poll(interaction):
+            await interaction.response.send_message('Sorry, only an admin can poll', ephemeral=True)
+        else:
+            print(f'/poll: {error}')
+            await interaction.response.send_message('Uknown Error, please report to admin or dev.', ephemeral=True)
+
 
 
 # ! Depricated, need to implement new way of handling these
@@ -466,14 +535,16 @@ def is_DM(channel: discord.channel):
 
 
 def can_confess(interaction : discord.Interaction):
-    if isinstance(interaction.channel, discord.DMChannel):
-        return False
-    elif bot.get_channel(serverDict[interaction.guild.id].confessions_channel_id) is None:
+    if bot.get_channel(serverDict[interaction.guild.id].confessions_channel_id) is None:
         return False
     elif serverDict[interaction.guild.id].confessions_allowed and serverDict[interaction.guild.id].confessions_channel_id == interaction.channel.id:
         return True
     else:
         return False
+
+
+def can_poll(interaction: discord.Interaction):
+    return interaction.user.guild_permissions.manage_channels
 
 
 def is_permitted_to_purge(member: discord.Member):
@@ -513,14 +584,19 @@ def load_servers():
     print('Server data was loaded')
 
 
-def is_welcome_set(guild_id: int):
-    pass
+def load_welcome_messages():
+    global welcomeDict
+    print('Loading welcome message data...')
 
-def is_audit_set(guild_id: int):
-    pass
+    with open('welcome.json', 'r') as file:
+        jsondict = json.loads(file.read())
 
-def if_confessions_set(guild_id: int):
-    pass
+        welcomeDict = jsondict
+
+        print('Welcome messages loaded')
+
+        file.close()
+
 
 # Classes
 class Server:
@@ -533,9 +609,10 @@ class Server:
         self.confessions_channel_id = 0
         self.confessions_allowed = False
         self.audit_enabled = False
+        self.welcome_enabled = False
     
     def __str__(self) -> str:
-        return f'id: {self.id}  welcome_channel_id: {self.welcome_channel_id}  audit_channel_id: {self.audit_channel_id}  confessions_channel_id: {self.confessions_channel_id}  confessions_allowed: {self.confessions_allowed}  audit_enabled: {self.audit_enabled}'
+        return f'id: {self.id}  welcome_channel_id: {self.welcome_channel_id}  audit_channel_id: {self.audit_channel_id}  confessions_channel_id: {self.confessions_channel_id}  confessions_allowed: {self.confessions_allowed}  audit_enabled: {self.audit_enabled}  welcome_enabled: {self.welcome_enabled}'
 
     def load_data(self, dictionary):
         self.id = dictionary['id']
@@ -544,12 +621,14 @@ class Server:
         self.confessions_channel_id = dictionary['confessions_channel_id']
         self.confessions_allowed = dictionary['confessions_allowed']
         self.audit_enabled = dictionary['audit_enabled']
+        self.welcome_enabled = dictionary['welcome_enabled']
 
 
 # TODO: Add enable welcome, and add welcome messages
 
 # * Commit:
-# - is_admin is now can_manage_channels
-# - Added some error messages for when audit logs are sent and the channel registered is not found in the guild
-# - Now if you confess and the set channel is not found the bot will tell you so
-# - Added on_guild_remove event which deletes the guild from the server dictionary
+# - Added welcome_enabled property to Server object
+# - Added load_welcome_messages that reads the welcome.json file and places it in the welcomeDict
+# - Added poll slash command
+# - Added poll to help command
+# - 

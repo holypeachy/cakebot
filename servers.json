@@ -5,6 +5,7 @@
         "audit_channel_id": 1136729290709405887,
         "confessions_channel_id": 1136729441528188987,
         "confessions_allowed": true,
-        "audit_enabled": true
+        "audit_enabled": true,
+        "welcome_enabled": true
     }
 }

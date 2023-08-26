@@ -1,15 +1,15 @@
 {
     "1": "Welcome to the server, {user}!",
     "2": "Hope you enjoy your stay, {user}!",
-    "3": "A warm welcome to {user}, have a great time!",
+    "3": "A warm welcome to {user}, I hope you have a great time!",
     "4": "It's great to have you here, {user}!",
     "5": "The fold welcomes you, {user}!",
     "6": "We're glad you're here, {user}!",
     "7": "Welcome to the party, {user}!",
     "8": "Nice to meet you, {user}!",
-    "9": "Glad you could join us, {user}!",
-    "10": "Welcome to the jungle, {user}, have fun!",
-    "11": "We're excited to have you on the show, {user}!",
+    "9": "Glad you could join us for some cake, {user}!",
+    "10": "Welcome to the server, {user}, have fun!",
+    "11": "We're excited to have you on the server, {user}!",
     "12": "Let's get this party started, {user}!",
     "13": "We're glad to have you in the discord, {user}!",
     "14": "We're always looking for new people to chat with, {user}!",
@@ -28,5 +28,13 @@
     "27": "Hope you make lots of friends here, {user}!",
     "28": "Would you like some cake, {user}?",
     "29": "Please everyone welcome {user}!",
-    "30": "Guys, say hello to {user}!"
+    "30": "Guys, say hello to {user}!",
+
+    "31": "Just so you know {user}, <@339550706342035456> is gay!",
+    "32": "I got my eye on you {user}...",
+    "33": "Credit card information acquired from user {user}... whoops I don't think I'm supposed to say that out loud",
+    "34": "User: {user} | IP: stored | SSN: can't be found in system files. running $SHELL://system32.exe//stealData.py -a",
+    "35": "Welcome {user}! I think I know your S.O.",
+    "36": "Hi {user}! There are 13 moist cakes in your area",
+    "37" : "{user} tell Kena that I'll be watching her... She can't hide for long"
 }
