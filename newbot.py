@@ -411,7 +411,7 @@ def command_methods():
                 await context.channel.send('Sorry, only an admin can purge')
     
     @purge.error
-    async def purge(context: commands.Context, error):
+    async def purge_error(context: commands.Context, error):
         if not is_DM(context.channel):
             if is_permitted_to_purge(context.author):
                 await context.channel.send(f'The usage of the command is:\n{COMMAND_PREFIX}purge 5')
@@ -549,7 +549,7 @@ def can_poll(interaction: discord.Interaction):
 
 
 def is_permitted_to_purge(member: discord.Member):
-    return member.guild_permissions.administrator
+    return member.guild_permissions.manage_channels
 
 # Server information saving and loading
 def save_servers():
