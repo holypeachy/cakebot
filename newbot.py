@@ -252,7 +252,7 @@ def command_methods():
             if can_manage_channels(context.author):
                 if serverDict[context.guild.id].confessions_channel_id == 0:
                     await context.send(f'Please set an Audit Log channel before enabling it! Use the following command to do so:\n**{COMMAND_PREFIX}set_audit**')
-                if arg.lower() == 'true' or arg.lower() == 'false':
+                elif arg.lower() == 'true' or arg.lower() == 'false':
                     serverDict[context.guild.id].audit_enabled = True if arg == 'true' else False
                     state = serverDict[context.guild.id].audit_enabled
                     save_servers()
@@ -277,7 +277,7 @@ def command_methods():
             if can_manage_channels(context.author):
                 if serverDict[context.guild.id].welcome_channel_id == 0:
                     await context.send(f'Please set a Welcome channel before enabling it! Use the following command to do so:\n**{COMMAND_PREFIX}set_welcome**')
-                if arg.lower() == 'true' or arg.lower() == 'false':
+                elif arg.lower() == 'true' or arg.lower() == 'false':
                     serverDict[context.guild.id].welcome_enabled = True if arg == 'true' else False
                     state = serverDict[context.guild.id].welcome_enabled
                     save_servers()
@@ -457,7 +457,7 @@ def slash_commands_methods():
         if serverDict[interaction.guild.id].confessions_channel_id == 0:
             await interaction.response.send_message('Confessions channel is not set for this server, please tell an admin to set a confessions channel!', ephemeral=True)
         elif not serverDict[interaction.guild.id].confessions_allowed:
-            await interaction.response.send_message('Sorry, confessions are not allowed on this server, tell an admin to enable it.', ephemeral=True)
+            await interaction.response.send_message('Sorry, confessions are not allowed on this server, tell an admin to enable them.', ephemeral=True)
         elif bot.get_channel(serverDict[interaction.guild.id].confessions_channel_id) is None:
             await interaction.response.send_message('A Confessions channel is set but it is not found in this server (could\'ve been deleted). Please tell an admin about this problem.', ephemeral=True)
         elif not serverDict[interaction.guild.id].confessions_channel_id == interaction.channel.id:
@@ -628,8 +628,4 @@ class Server:
 # TODO: Add enable welcome, and add welcome messages
 
 # * Commit:
-# - Added welcome_enabled property to Server object
-# - Added load_welcome_messages that reads the welcome.json file and places it in the welcomeDict
-# - Added poll slash command
-# - Added poll to help command
 # - 
