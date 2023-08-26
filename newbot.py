@@ -250,7 +250,7 @@ def command_methods():
     async def enable_audit(context: commands.Context, arg):
         if not is_DM(context.channel):
             if can_manage_channels(context.author):
-                if serverDict[context.guild.id].confessions_channel_id == 0:
+                if serverDict[context.guild.id].audit_channel_id == 0:
                     await context.send(f'Please set an Audit Log channel before enabling it! Use the following command to do so:\n**{COMMAND_PREFIX}set_audit**')
                 elif arg.lower() == 'true' or arg.lower() == 'false':
                     serverDict[context.guild.id].audit_enabled = True if arg == 'true' else False
