@@ -26,6 +26,7 @@ TAYIMO_ID = 403249158187778067
 
 serverDict = dict()
 welcomeDict = dict()
+goodbyeDict = dict()
 bot = None
 
 def start_bot():
@@ -41,7 +42,7 @@ def start_bot():
     # Loads the stored server data from the json file
     load_servers()
 
-    load_welcome_messages()
+    load_messages()
 
 
     # These methods are organizational and contain the events and commands that will be registered async
@@ -92,13 +93,15 @@ def event_methods():
                     print(f'Server \"{entry.guild.name}\" has not set up a AuditLog channel yet!')
                 else:
                     print(f'Server \"{entry.guild.name}\" has a registered AuditLog Channel that is not found in the server!')
+            else:
+                log = f"{entry.user.name}  {entry.action.name} \n{time.split('T')[0]} at {time.split('T')[1].split('.')[0]} EST"
+                embededLog = discord.Embed(title="🫧  Log Entry", description=log, color=0x9dc8d1)
+                embededLog.set_author(name=f'{entry.user.global_name}', icon_url=entry.user.avatar.url)
+                embededLog.set_thumbnail(url=entry.user.avatar.url)
+                await channel.send(embed=embededLog)
 
-        elif serverDict[entry.guild.id].audit_enabled == False:
-            print(f'Audit log disabled for  \"{entry.guild.name}\" guild')
         else:
-            log = f"{entry.user.name}  {entry.action.name} \n{time.split('T')[0]} at {time.split('T')[1].split('.')[0]} EST"
-            embededLog = discord.Embed(title="🫧", description=log, color=0x9dc8d1)
-            await channel.send(embed=embededLog)
+            print(f'Audit log disabled for  \"{entry.guild.name}\" guild')
 
  
     @bot.event
@@ -115,7 +118,7 @@ def event_methods():
     @bot.event
     async def on_member_join(member: discord.Member):
 
-        print(f'\"{member.global_name}\" (id: {member.id}) joined the server {member.guild.name}\n')
+        print(f'\"{member.global_name}\" (username: {member.name}) joined the server {member.guild.name}\n')
 
         if serverDict.__contains__(member.guild.id):
             serverInfo = serverDict[member.guild.id]
@@ -127,7 +130,31 @@ def event_methods():
                     num = random.randint(1, len(welcomeDict))
                     welcome_message = welcomeDict[str(num)]
                     welcome_message = welcome_message.replace('{user}', f'<@{member.id}>')
-                    await welcome_channel.send('> ## ' + welcome_message)
+                    embeded_welcome = discord.Embed(title="🫧", description=welcome_message, color=0x9dc8d1)
+                    embeded_welcome.set_author(name=f'{member.global_name}', icon_url=member.avatar.url)
+                    embeded_welcome.set_thumbnail(url='https://cdn.discordapp.com/attachments/1136729265530998884/1145392932120186890/Cute.JPG')
+                    await welcome_channel.send(embed=embeded_welcome)
+    
+
+    @bot.event
+    async def on_member_remove(member: discord.Member):
+
+        print(f'\"{member.global_name}\" (username: {member.name}) has left (or removed from) the server {member.guild.name}\n')
+
+        if serverDict.__contains__(member.guild.id):
+            serverInfo = serverDict[member.guild.id]
+            if serverInfo.welcome_enabled:
+                welcome_channel = bot.get_channel(serverInfo.welcome_channel_id)
+                if welcome_channel is None:
+                    print(f'Welcome channel for guild {member.guild.name} is enabled but the stored channel cannot be found')
+                else:
+                    num = random.randint(1, len(goodbyeDict))
+                    goodbye_message = goodbyeDict[str(num)]
+                    goodbye_message = goodbye_message.replace('{user}', f'<@{member.id}>')
+                    embeded_goodbye = discord.Embed(title="🫧", description=goodbye_message, color=0x9dc8d1)
+                    embeded_goodbye.set_author(name=f'{member.global_name}', icon_url=member.avatar.url)
+                    embeded_goodbye.set_thumbnail(url='https://cdn.discordapp.com/attachments/1136729265530998884/1145393743189508178/IMG_20230818_170852_197.jpg')
+                    await welcome_channel.send(embed=embeded_goodbye)
 
 
     @bot.event
@@ -405,7 +432,7 @@ def command_methods():
         if not is_DM(context.channel):
             if is_permitted_to_purge(context.author):
                 limit = int(arg)
-                await send_purge_audit(context.author, context.guild.id, limit, context.channel)
+                await send_purge_audit(context.author, context.guild, limit, context.channel)
                 await context.channel.purge(limit=limit+1)
             else:
                 await context.channel.send('Sorry, only an admin can purge')
@@ -451,6 +478,7 @@ def slash_commands_methods():
             embededConfession = discord.Embed(title="🫧  By Anonymous Member!", description=confession, color=0x9dc8d1)
             await interaction.response.send_message('Your confession has been successfully posted and only you can see this message', ephemeral=True)
             await interaction.channel.send(embed=embededConfession)
+            await send_confession_audit(interaction.guild, interaction.user, confession)
     
     @confess.error
     async def confess_error(interaction : discord.Interaction, error):
@@ -507,15 +535,32 @@ async def answer_message(original_message):
         print(e)
 
 
-async def send_purge_audit(member: discord.Member, guild_id: int, limit : int, channel):
-    if serverDict.__contains__(guild_id):
-        if serverDict[guild_id].audit_enabled and not serverDict[guild_id].audit_channel_id == 0:
-            if type(bot.get_channel(serverDict[guild_id].audit_channel_id)) is None:
-                log = f"{member.global_name} called purge for {limit} messages in \"{channel.name}\"\n"
-                embededLog = discord.Embed(title="🫧", description=log, color=0x9dc8d1)
-                await bot.get_channel(serverDict[guild_id].audit_channel_id).send(embed=embededLog)
+async def send_purge_audit(member: discord.Member, guild: discord.Guild, limit : int, channel):
+    if serverDict.__contains__(guild.id):
+        # serverDict[guild.id].audit_enabled and
+        if not serverDict[guild.id].audit_channel_id == 0:
+            if bot.get_channel(serverDict[guild.id].audit_channel_id) is None:
+                print(f'Guild {guild.name} (id: {guild.id}) has an Audit Log channel registered but it cannot be found in the guild.')
             else:
-                print(f'Guild {bot.get_guild(guild_id).name} has an Audit Log channel registered but it cannot be found in the guild.')
+                log = f"{member.name} called purge for {limit} messages in \"{channel.name}\" channel"
+                embededLog = discord.Embed(title="🫧  Purge", description=log, color=0x9dc8d1)
+                embededLog.set_author(name=f'{member.global_name}', icon_url=member.avatar.url)
+                embededLog.set_thumbnail(url=member.avatar.url)
+                await bot.get_channel(serverDict[guild.id].audit_channel_id).send(embed=embededLog)
+
+
+async def send_confession_audit(guild: discord.Guild, member: discord.Member, confession: str):
+    if serverDict.__contains__(guild.id):
+        # serverDict[guild.id].audit_enabled and
+        if not serverDict[guild.id].audit_channel_id == 0:
+            if bot.get_channel(serverDict[guild.id].audit_channel_id) is None:
+                print(f'Guild {guild.name} (id: {guild.id}) has an Audit Log channel registered but it cannot be found in the guild.')
+            else:
+                log = f'{member.global_name} ({member.name}) has confessed:\n\"{confession}\"'
+                embededLog = discord.Embed(title="🫧  Confession", description=log, color=0x9dc8d1)
+                embededLog.set_author(name=f'{member.global_name}', icon_url=member.avatar.url)
+                embededLog.set_thumbnail(url=member.avatar.url)
+                await bot.get_channel(serverDict[guild.id].audit_channel_id).send(embed=embededLog)
 
 
 # On these methods context means either context from a command or message
@@ -585,8 +630,9 @@ def load_servers():
     print('Server data was loaded')
 
 
-def load_welcome_messages():
+def load_messages():
     global welcomeDict
+    global goodbyeDict
     print('Loading welcome message data...')
 
     with open('welcome.json', 'r') as file:
@@ -595,6 +641,16 @@ def load_welcome_messages():
         welcomeDict = jsondict
 
         print('Welcome messages loaded')
+
+        file.close()
+
+    print('Loading goodbye message data...')
+    with open('goodbye.json', 'r') as file:
+        jsondict = json.loads(file.read())
+
+        goodbyeDict = jsondict
+
+        print('Goodbye messages loaded')
 
         file.close()
 
@@ -628,4 +684,8 @@ class Server:
 # TODO: Add enable welcome, and add welcome messages
 
 # * Commit:
-# - 
+# - Changed welcome messages
+# - Now Confession and purge logs are sent even if audit logs are disabled
+# - Added 30 goodbye messages as goodby.json
+# - Bot now says goodbye to members
+# - Made logs, welcome messages, and goodbye messages look prettier
