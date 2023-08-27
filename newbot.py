@@ -556,7 +556,7 @@ async def send_confession_audit(guild: discord.Guild, member: discord.Member, co
             if bot.get_channel(serverDict[guild.id].audit_channel_id) is None:
                 print(f'Guild {guild.name} (id: {guild.id}) has an Audit Log channel registered but it cannot be found in the guild.')
             else:
-                log = f'{member.global_name} ({member.name}) has confessed:\n\"{confession}\"'
+                log = f'{member.name} has confessed:\n\"{confession}\"'
                 embededLog = discord.Embed(title="🫧  Confession", description=log, color=0x9dc8d1)
                 embededLog.set_author(name=f'{member.global_name}', icon_url=member.avatar.url)
                 embededLog.set_thumbnail(url=member.avatar.url)
