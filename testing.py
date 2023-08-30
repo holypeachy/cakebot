@@ -3,6 +3,7 @@ import discord
 from discord.ext import commands
 import youtube_dl
 import re
+from config import TOKEN 
 
 
 my_intents = discord.Intents.default()
@@ -110,4 +111,4 @@ async def stop(ctx):
 
 
 if __name__ == "__main__" :
-    bot.run("MTEzNjcyNzU3ODE0OTkxMjY3Nw.GWdXS2.EfLioGTzaajLwzsZ4TSf4iIsC3B7pqkF_e7z_4")
+    bot.run(TOKEN)
