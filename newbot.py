@@ -904,9 +904,7 @@ class Server:
 
 
 # TODO: Replace depricated methods
+# TODO: Make production help message
 
 # * Commit:
-# - Added confirmation to reset_role_exclude
-# - Commented code and renamed some vars for readability
-# - This marks the end of Kena s tasks for now
 # - 
