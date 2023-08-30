@@ -6,6 +6,17 @@
         "confessions_channel_id": 1136729441528188987,
         "confessions_allowed": true,
         "audit_enabled": true,
-        "welcome_enabled": true
+        "welcome_enabled": true,
+        "role_select_message": 1146259920803594270,
+        "role_select_channel": 1136726364788113460,
+        "role_select_excluded": [
+            1142014454024904706,
+            1136889520860708868
+        ],
+        "role_select_dict": {
+            "\ud83d\ude00": 1143356950378192927,
+            "\ud83d\ude01": 1142014221278773249,
+            "\ud83d\ude02": 1142013619110940685
+        }
     }
 }

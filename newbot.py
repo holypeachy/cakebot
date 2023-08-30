@@ -7,8 +7,8 @@ from discord.ext import commands
 import responses
 
 # Settings from config.py
-from config import TEST_TOKEN as TOKEN
-from config import TEST_COMMAND_PREFIX as COMMAND_PREFIX
+from config import TOKEN
+from config import COMMAND_PREFIX
 
 # Errors
 from discord.ext.commands import CommandNotFound
@@ -19,15 +19,20 @@ import pytz
 import random
 import json
 
-VIBES_ID = 339550706342035456
-SUFYAAN_ID = 851221324126093382
-
-TAYIMO_ID = 403249158187778067
-
 serverDict = dict()
 welcomeDict = dict()
 goodbyeDict = dict()
+idsDict = { 'vibes': 339550706342035456, 'sufyaan': 851221324126093382, 'tayimo': 403249158187778067}
 bot = None
+
+role_select_emojis = ['😀', '😁', '😂', '😃', '😄', '😅', '😆', '😉', '😊', '🙂',
+'🙃', '😍', '🥰', '😘', '😗', '😙', '😚', '😋', '😛', '😝',
+'😜', '🤪', '🤨', '🧐', '🤓', '😎', '🥸', '🥹', '🥺', '😭',
+'😢', '😣', '😤', '😡', '👿', '😾', '😿', '😹', '😸', '🙀',
+'😼', '😽', '🐶', '🐕', '🐩', '🐺', '🦊', '🦝', '🦌',
+'🐿', '🦔', '🐆', '🐿', '🐞', '🐜', '🐝', '🪧', '🏁',
+'🎌', '🏳️', '🏳️‍🌈', '🏴‍☠️', '🎐', '🛸', '🪐', '🌌',
+'🌠', '✨', '💫', '🌛', '🌜', '🌝', '🌚', '🌑', '🌒']
 
 def start_bot():
     # Intents
@@ -35,6 +40,7 @@ def start_bot():
     my_intents.message_content = True
     my_intents.dm_messages = True
     my_intents.members = True
+    my_intents.guild_reactions = True
 
     global bot
     bot = commands.Bot(COMMAND_PREFIX, intents=my_intents, help_command=None)
@@ -83,6 +89,15 @@ def event_methods():
         # Log for the terminal
         print('\nServer log:')
         print(f" Guild: \"{entry.guild.name}\" id: {entry.guild.id} Server Nickname: {'No nickname' if (type(entry.user) is discord.user.User or type(entry.user) is None) else entry.user.nick} User: {entry.user.global_name} ID:{entry.user.name} | Action: {entry.action.name} | Date: {time.split('T')[0]} Time: {time.split('T')[1].split('.')[0]} EST\n")
+
+
+        # Update Role Select
+        if entry.action in [discord.AuditLogAction.role_create, discord.AuditLogAction.role_update, discord.AuditLogAction.role_delete] and await is_setup(entry.guild.id):
+            channel = bot.get_channel(serverDict[entry.guild.id].role_select_channel)
+            message = await channel.fetch_message(serverDict[entry.guild.id].role_select_message)
+            await role_select_command(channel, entry.guild, entry.guild.owner)
+            await message.delete()
+            
 
         # We check if we need to send the guild the log
         if serverDict[entry.guild.id].audit_enabled == True:
@@ -190,7 +205,16 @@ def event_methods():
                 print(f'Member {temp_member.global_name} is not in any of the servers')
                 await message.author.send('Sorry but you are not a member of the servers I know')
                 return
-                    
+            
+        
+        # Random Messages to some people
+        idsValues = idsDict.values()
+        randomInt = random.randint(1,100)
+        if message.author.id in idsValues:
+            print(f'{message.author.global_name} rolled a {randomInt}!')
+            if not is_DM(message.channel) and ( 1 <= randomInt <= 5):
+                await message.channel.send(f'Shut up {message.author.global_name}')
+                
 
         # Message log
         print(f"\n\"{message.author.global_name}\" / \"{message.author}\" said: \"{str(message.content)}\" in \"{message.channel}\" server: \"{message.guild}\"")
@@ -204,7 +228,28 @@ def event_methods():
             if response != '':
                 await message.channel.send(response)
         else:
-            await answer_message(message)
+            await handle_message(message)
+
+
+    @bot.event
+    async def on_raw_reaction_add(payload : discord.RawReactionActionEvent):
+        channel = bot.get_channel(payload.channel_id)
+
+        if channel and payload.message_id == serverDict[payload.guild_id].role_select_message  and payload.user_id != bot.user.id:
+            dictionary = serverDict[payload.guild_id].role_select_dict
+            guild = bot.get_guild(payload.guild_id)
+            await guild.get_member(payload.user_id).add_roles(guild.get_role(dictionary[payload.emoji.__str__()]))
+    
+    @bot.event
+    async def on_raw_reaction_remove(payload : discord.RawReactionActionEvent):
+        channel = bot.get_channel(payload.channel_id)
+
+        if channel and payload.message_id == serverDict[payload.guild_id].role_select_message and payload.user_id != bot.user.id:
+            dictionary = serverDict[payload.guild_id].role_select_dict
+            guild = bot.get_guild(payload.guild_id)
+            await guild.get_member(payload.user_id).remove_roles(guild.get_role(dictionary[payload.emoji.__str__()]))
+            save_servers
+
 
 
 def dev_command_methods():
@@ -387,14 +432,15 @@ def command_methods():
                 else:
                     player2 = temp.nick
 
-                if context.author.id == TAYIMO_ID:
-                    await context.channel.send(f'# 🤠   👉      👈💥\n> **{player2}** wins!')
-                elif player2id == TAYIMO_ID:
-                    await context.channel.send(f'# 💥👉      👈🤠\n> **{player1}** wins!')
+                if context.author.id == idsDict['tayimo']:
+                    await context.channel.send(f'# 🤠👉          💥💀\n> **{player2}** wins!')
+                elif player2id == idsDict['tayimo']:
+                    await context.channel.send(f'# 💀💥          👈🤠\n> **{player1}** wins!')
+
                 elif random.randint(1, 10) <= 5:
-                    await context.channel.send(f'# 💥👉      👈🤠\n> **{player1}** wins!')
+                    await context.channel.send(f'# 💀💥          👈🤠\n> **{player1}** wins!')
                 else:
-                    await context.channel.send(f'# 🤠👉      👈💥\n> **{player2}** wins!')
+                    await context.channel.send(f'# 🤠👉          💥💀\n> **{player2}** wins!')
             else:
                 await context.channel.send(f'The usage of the command is:\n' + COMMAND_PREFIX +'standoff @user\n')
         else:
@@ -407,7 +453,7 @@ def command_methods():
             await context.send(f'>>> 🍰 Hi! My current commands are:\n**{COMMAND_PREFIX}repeat** I will repeat anything you say\n**{COMMAND_PREFIX}standoff** Want to do a cowboy stand off against a friend? 🤠\n**/confess** in the confessions channel to send an anonymous confessions\n\n**For Testers**\n**{COMMAND_PREFIX}embed** Allows you to create an embeded message\n**/poll** Allows you to create polls\n\n**For admins**\n**{COMMAND_PREFIX}purge** Will delete x number of messages from the current channel\n**{COMMAND_PREFIX}set_welcome** Sets the Welcome channel\n**{COMMAND_PREFIX}set_audit** Sets the AuditLog channel \n**{COMMAND_PREFIX}set_confessions** Sets the Confessions channel\n**{COMMAND_PREFIX}enable_confessions** Enable of disable confessions for this server\n**{COMMAND_PREFIX}enable_audit** Enable of disable Audit Logs in this server\n\nIf you need help with individual commands type the command!')
 
         
-    # Usage: !purge [limit]
+    # Usage: !purge [limit] | Depricated-ish
     @bot.command(name='purgee')
     async def purge_channel(context: commands.Context, *args):
         if not is_DM(context.channel):
@@ -449,7 +495,7 @@ def command_methods():
     @bot.command(name='embed')
     async def embed(context: commands.Context, title: str, message: str):
         if not is_DM(context.channel):
-            if context.author.guild_permissions.manage_channels:
+            if can_manage_channels(context.author):
                 embededMessage = discord.Embed(title=f"🫧  {title}", description=message, color=0x9dc8d1)
                 embededMessage.set_author(name=f'{context.author.global_name}', icon_url=context.author.avatar.url)
                 await context.channel.send(embed=embededMessage)
@@ -463,6 +509,72 @@ def command_methods():
                 await context.channel.send(f'Sorry, only an admin can do that')
             else:
                 await context.channel.send(f'The command is:\n{COMMAND_PREFIX}embed "My Embed Title" "I would like to say cake is great!  🍰"')
+
+
+    @bot.command(name='roles')
+    async def show_roles(context: commands.Context):
+        if not is_DM(context.channel):
+            roles_message = ''
+            for role in context.guild.roles:
+                roles_message += '' if role.name == '@everyone' else f'- {role.name}\n'
+            
+            if len(serverDict[context.guild.id].role_select_excluded) != 0:
+                roles_message += '\n Roles you cannot select and which must be given by staff are:\n'
+                for role_id in serverDict[context.guild.id].role_select_excluded:
+                    role = context.guild.get_role(role_id)
+                    roles_message += f'- {role.name}\n'
+
+            embededMessage = discord.Embed(title=f"🫧  These are all the Roles in {context.guild.name}", description=roles_message, color=0x9dc8d1)
+            embededMessage.set_author(name=f'{context.guild.owner.global_name}', icon_url=context.guild.owner.avatar.url)
+            embededMessage.set_thumbnail(url=context.guild.icon.url)
+
+            await context.channel.send(embed=embededMessage)
+
+
+    @bot.command(name='role_select')
+    async def role_select(context: commands.Context):
+        await role_select_command(context.channel, context.guild, context.author)
+
+
+    @bot.command(name='role_exclude')
+    async def role_exclude(context: commands.Context, *args):
+        if not is_DM(context.channel):
+            if can_manage_channels(context.author):
+                if len(args) == 0:
+                    await context.channel.send(f'The command is:\n{COMMAND_PREFIX}role_exclude Admin Mod \"The Kueen"')
+                else:
+                    for arg in args:
+                        if any(role.name == arg for role in context.guild.roles):
+                            filtered_roles = list(filter(lambda role: role.name == arg, context.guild.roles))
+                            if not serverDict[context.guild.id].role_select_excluded.__contains__(filtered_roles[0].id):
+                                serverDict[context.guild.id].role_select_excluded.append(filtered_roles[0].id)
+                        else:
+                           await context.channel.send(f'⚠️ Role \"{arg}\" was not found in the server. Check for typos.')
+                    
+                    message = ''
+                    for role_id in serverDict[context.guild.id].role_select_excluded:
+                        message += f'- {context.guild.get_role(role_id).name}\n'
+
+                    embededMessage = discord.Embed(title=f"🫧  Roles to Exclude from \"Role Select\"", description=message, color=0x9dc8d1)
+                    embededMessage.set_footer(text='Changes have been saved')
+                    embededMessage.set_thumbnail(url=context.guild.icon.url)
+                    
+                    save_servers()
+                    await context.channel.send(embed=embededMessage)
+            else:
+                await context.channel.send(f'Sorry, only an admin can do that')
+                    
+
+    @bot.command(name='reset_role_exclude')
+    async def reset_role_exclude(context: commands.Context):
+        if not is_DM(context.channel):
+            if can_manage_channels(context.author):
+                serverDict[context.guild.id].role_select_excluded = list()
+                save_servers()
+                await context.channel.send('The list of excluded roles for \"Role Select\" has been reset!')
+            else:
+                await context.channel.send(f'Sorry, only an admin can do that')
+
 
 
 def slash_commands_methods():
@@ -525,7 +637,7 @@ def slash_commands_methods():
 
 
 # ! Depricated, need to implement new way of handling these
-async def answer_message(original_message):
+async def handle_message(original_message):
     try:
         response = responses.handle_response(str(original_message.content))
         if response != '':
@@ -655,6 +767,55 @@ def load_messages():
         file.close()
 
 
+async def is_setup(guild_id : int):
+    if not (serverDict[guild_id].role_select_message == 0 or serverDict[guild_id].role_select_channel == 0):
+        channel = bot.get_channel(serverDict[guild_id].role_select_channel)
+        try :
+           message = await channel.fetch_message(serverDict[guild_id].role_select_message)
+        except:
+            return False
+
+        if not channel or not message:
+            return False
+        else:
+            return True
+    else:
+        return False
+
+
+async def role_select_command(a_channel: discord.TextChannel, a_guild: discord.Guild, a_author: discord.Member):
+    if not is_DM(a_channel):
+        if can_manage_channels(a_author):
+            available_roles = a_guild.roles
+
+            available_roles = list(filter(lambda role: role.name != '@everyone', available_roles))
+
+            for role_id in serverDict[a_guild.id].role_select_excluded:
+                available_roles = list(filter(lambda role: role.id != role_id, available_roles))
+
+            role_info_dict = {}
+
+            for i,role in enumerate(available_roles):
+                role_info_dict[role_select_emojis[i]] = role.id
+            
+            serverDict[a_guild.id].role_select_dict = role_info_dict
+
+            message = ''
+            for key in role_info_dict:
+                message += f'{key} - {a_guild.get_role(role_info_dict[key]).name}\n'
+
+            embededMessage = discord.Embed(title=f"🫧  Role Select", description=message, color=0x9dc8d1)
+            embededMessage.set_thumbnail(url=a_guild.icon.url)
+
+            message = await a_channel.send(embed=embededMessage)
+            serverDict[a_guild.id].role_select_message = message.id
+            serverDict[a_guild.id].role_select_channel = message.channel.id
+
+            save_servers()
+            for key in role_info_dict:
+                await message.add_reaction(f'{key}')
+
+
 # Classes
 class Server:
     def __init__(self, guild_id):
@@ -664,28 +825,48 @@ class Server:
         self.welcome_channel_id = 0
         self.audit_channel_id = 0
         self.confessions_channel_id = 0
+
         self.confessions_allowed = False
         self.audit_enabled = False
         self.welcome_enabled = False
+
+        self.role_select_message = 0
+        self.role_select_channel = 0
+        self.role_select_excluded = []
+        self.role_select_dict = {}
     
     def __str__(self) -> str:
         return f'id: {self.id}  welcome_channel_id: {self.welcome_channel_id}  audit_channel_id: {self.audit_channel_id}  confessions_channel_id: {self.confessions_channel_id}  confessions_allowed: {self.confessions_allowed}  audit_enabled: {self.audit_enabled}  welcome_enabled: {self.welcome_enabled}'
 
     def load_data(self, dictionary):
         self.id = dictionary['id']
+
         self.welcome_channel_id = dictionary['welcome_channel_id']
         self.audit_channel_id = dictionary['audit_channel_id']
         self.confessions_channel_id = dictionary['confessions_channel_id']
+
         self.confessions_allowed = dictionary['confessions_allowed']
         self.audit_enabled = dictionary['audit_enabled']
         self.welcome_enabled = dictionary['welcome_enabled']
 
+        self.role_select_message = dictionary['role_select_message']
+        self.role_select_channel = dictionary['role_select_channel']
+        self.role_select_excluded = dictionary['role_select_excluded']
+        self.role_select_dict = dictionary['role_select_dict']
 
-# TODO: Add enable welcome, and add welcome messages
+
+# TODO: Add random messages so stored users
 
 # * Commit:
-# - Changed welcome messages
-# - Now Confession and purge logs are sent even if audit logs are disabled
-# - Added 30 goodbye messages as goodby.json
-# - Bot now says goodbye to members
-# - Made logs, welcome messages, and goodbye messages look prettier
+# - answer_message is now handle_message
+# - Changed standoffs a bit
+# - Added random shut up to registered users
+# - Added commands roles, role_select, and role_exlude, reset_role_exclude
+# - Added events on_reaction_add and on_reaction_remove
+# - Added role_select_message, role_select_excluded, and role_select_dict properties to Server class
+# - If select_role is set up properly and someone changes the roles, the message is sent again with the updated roles
+
+# answer = await bot.wait_for(
+#     "message", 
+#     check=lambda x: x.content.startswith('!') and x.channel == channel and x.author == author
+# )
