@@ -22,7 +22,4 @@ def handle_response(message) -> str:
 
 def handle_dm(message) ->str:
     p_message = message.lower()
-    if p_message.split(' ', 1)[0] == '!confess':
-        return ''
-    else:
-        return 'Hi! 👋 There.'
+    return 'Hi! 👋 There.'
