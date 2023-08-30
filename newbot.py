@@ -101,11 +101,12 @@ def event_methods():
             channel = bot.get_channel(serverDict[entry.guild.id].role_select_channel)
             
             # This directly makes a call to the discord servers, should never return an error
-            original_message = await channel.fetch_message(serverDict[entry.guild.id].role_select_message)
+            for message_id in serverDict[entry.guild.id].role_select_messages:
+                original_message = await channel.fetch_message(message_id)
+                await original_message.delete()
 
             # We resend the role_select message and we delete original
             await role_select_function(channel, entry.guild, entry.guild.owner)
-            await original_message.delete()
 
         # We check if we need to send the guild the log
         if serverDict[entry.guild.id].audit_enabled:
@@ -251,7 +252,7 @@ def event_methods():
         channel = bot.get_channel(payload.channel_id)
 
         # Is channel None? AND is the message the same as the stored one AND is the the user not the bot 
-        if channel and payload.message_id == serverDict[payload.guild_id].role_select_message and payload.user_id != bot.user.id:
+        if channel and payload.message_id in serverDict[payload.guild_id].role_select_messages and payload.user_id != bot.user.id:
             roleDict = serverDict[payload.guild_id].role_select_dict
             guild = bot.get_guild(payload.guild_id)
             role_to_add = guild.get_role(roleDict[payload.emoji.__str__()])
@@ -263,12 +264,13 @@ def event_methods():
         channel = bot.get_channel(payload.channel_id)
 
         # Is channel None? AND is the message the same as the stored one AND is the the user not the bot 
-        if channel and payload.message_id == serverDict[payload.guild_id].role_select_message and payload.user_id != bot.user.id:
+        if channel and payload.message_id in serverDict[payload.guild_id].role_select_messages and payload.user_id != bot.user.id:
             roleDict = serverDict[payload.guild_id].role_select_dict
             guild = bot.get_guild(payload.guild_id)
             role_to_remove = guild.get_role(roleDict[payload.emoji.__str__()])
             
-            await guild.get_member(payload.user_id).remove_roles(role_to_remove)
+            if not role_to_remove.name.lower() == 'minor':
+                await guild.get_member(payload.user_id).remove_roles(role_to_remove)
             save_servers
 
 
@@ -816,12 +818,13 @@ def load_messages():
 
 
 async def is_role_select_setup(guild_id : int):
-    if not (serverDict[guild_id].role_select_message == 0 or serverDict[guild_id].role_select_channel == 0):
+    if not (serverDict[guild_id].role_select_messages == [] or serverDict[guild_id].role_select_channel == 0):
         channel = bot.get_channel(serverDict[guild_id].role_select_channel)
-        try :
-           message = await channel.fetch_message(serverDict[guild_id].role_select_message)
-        except:
-            return False
+        for message_id in serverDict[guild_id].role_select_messages:
+            try :
+                message = await channel.fetch_message(message_id)
+            except:
+                return False
 
         if not channel or not message:
             return False
@@ -834,6 +837,7 @@ async def is_role_select_setup(guild_id : int):
 async def role_select_function(a_channel: discord.TextChannel, a_guild: discord.Guild, a_author: discord.Member):
     if not is_DM(a_channel):
         if can_manage_channels(a_author):
+            serverDict[a_guild.id].role_select_messages = []
             available_roles = a_guild.roles
 
             available_roles = list(filter(lambda role: role.name != '@everyone', available_roles))
@@ -848,20 +852,34 @@ async def role_select_function(a_channel: discord.TextChannel, a_guild: discord.
             
             serverDict[a_guild.id].role_select_dict = role_info_dict
 
-            message = ''
-            for key in role_info_dict:
-                message += f'{key} - {a_guild.get_role(role_info_dict[key]).name}\n'
+            message_list = ['']
+            current_message_index = 0
+            for i,key in enumerate(role_info_dict):
+                message_list[current_message_index] += f'{key} - {a_guild.get_role(role_info_dict[key]).name}\n'
+                if i % 19 == 0 and i != 0:
+                    message_list.append('')
+                    current_message_index += 1
 
-            embededMessage = discord.Embed(title=f"🫧  Role Select", description=message, color=0x9dc8d1)
-            embededMessage.set_thumbnail(url=a_guild.icon.url)
+            for i,current_message in enumerate(message_list):
+                if i == 0:
+                    embededMessage = discord.Embed(title=f"🫧  Role Select", description=message_list[0], color=0x9dc8d1)
+                    embededMessage.set_thumbnail(url=a_guild.icon.url)
+                    message_object = await a_channel.send(embed=embededMessage)
+                    serverDict[a_guild.id].role_select_messages.append(message_object.id)
+                    serverDict[a_guild.id].role_select_channel = message_object.channel.id
+                else:
+                    embededMessage = discord.Embed(description=current_message, color=0x9dc8d1)
+                    message_object = await a_channel.send(embed=embededMessage)
+                    serverDict[a_guild.id].role_select_messages.append(message_object.id)
 
-            message = await a_channel.send(embed=embededMessage)
-            serverDict[a_guild.id].role_select_message = message.id
-            serverDict[a_guild.id].role_select_channel = message.channel.id
+            current_message_index = 0
+            for i,role_id in enumerate(role_info_dict):
+                current_message_object = await a_channel.fetch_message(serverDict[a_guild.id].role_select_messages[current_message_index])
+                await current_message_object.add_reaction(role_id)
+                if i % 19 == 0 and i != 0:
+                    current_message_index += 1
 
             save_servers()
-            for key in role_info_dict:
-                await message.add_reaction(f'{key}')
 
 
 # Classes
@@ -878,7 +896,7 @@ class Server:
         self.audit_enabled = False
         self.welcome_enabled = False
 
-        self.role_select_message = 0
+        self.role_select_messages = []
         self.role_select_channel = 0
         self.role_select_excluded = []
         self.role_select_dict = {}
@@ -897,7 +915,7 @@ class Server:
         self.audit_enabled = dictionary['audit_enabled']
         self.welcome_enabled = dictionary['welcome_enabled']
 
-        self.role_select_message = dictionary['role_select_message']
+        self.role_select_messages = dictionary['role_select_messages']
         self.role_select_channel = dictionary['role_select_channel']
         self.role_select_excluded = dictionary['role_select_excluded']
         self.role_select_dict = dictionary['role_select_dict']
@@ -905,6 +923,9 @@ class Server:
 
 # TODO: Replace depricated methods
 # TODO: Make production help message
+# TODO: Only use 20 emojis instead of close to 100 (list of dictionaries instead of a single dictionary)
 
 # * Commit:
+# - Fixed roles. Only 20 reactions per message
+# - Added minor role cannot unpick said role
 # - 
