@@ -1,6 +1,7 @@
 # My Files
 config.py
 servers.json
+*.webm
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
