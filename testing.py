@@ -58,7 +58,7 @@ async def play(ctx,url):
     server = ctx.message.guild
     voice_channel = server.voice_client
     async with ctx.typing():
-        source = await YTDLSource.from_url(url, loop=bot.loop, stream=True)
+        source = await YTDLSource.from_url(url, loop=bot.loop, stream=False)
         voice_channel.play(discord.FFmpegPCMAudio(source=source[0]))
         # As The World Caves In - Matt Maltese (Cover by Sarah Cothran)-SqDjQPoJxiw.webm
         trimmed_filename = re.split(r'-\w*(\.webm)$', source[1])[0]

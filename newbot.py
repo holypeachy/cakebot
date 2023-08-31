@@ -254,10 +254,12 @@ def event_methods():
         # Is channel None? AND is the message the same as the stored one AND is the the user not the bot 
         if channel and payload.message_id in serverDict[payload.guild_id].role_select_messages and payload.user_id != bot.user.id:
             roleDict = serverDict[payload.guild_id].role_select_dict
-            guild = bot.get_guild(payload.guild_id)
-            role_to_add = guild.get_role(roleDict[payload.emoji.__str__()])
+            if payload.emoji.__str__() in roleDict.keys():
+                guild = bot.get_guild(payload.guild_id)
+                role_to_add = guild.get_role(roleDict[payload.emoji.__str__()])
 
-            await guild.get_member(payload.user_id).add_roles(role_to_add)
+                await guild.get_member(payload.user_id).add_roles(role_to_add)
+    
     
     @bot.event
     async def on_raw_reaction_remove(payload : discord.RawReactionActionEvent):
@@ -266,13 +268,12 @@ def event_methods():
         # Is channel None? AND is the message the same as the stored one AND is the the user not the bot 
         if channel and payload.message_id in serverDict[payload.guild_id].role_select_messages and payload.user_id != bot.user.id:
             roleDict = serverDict[payload.guild_id].role_select_dict
-            guild = bot.get_guild(payload.guild_id)
-            role_to_remove = guild.get_role(roleDict[payload.emoji.__str__()])
-            
-            if not role_to_remove.name.lower() == 'minor':
-                await guild.get_member(payload.user_id).remove_roles(role_to_remove)
-            save_servers
-
+            if payload.emoji.__str__() in roleDict.keys():
+                guild = bot.get_guild(payload.guild_id)
+                role_to_remove = guild.get_role(roleDict[payload.emoji.__str__()])
+                
+                if not role_to_remove.name.lower() == 'minor':
+                    await guild.get_member(payload.user_id).remove_roles(role_to_remove)
 
 
 def dev_command_methods():
@@ -475,7 +476,7 @@ def command_methods():
     @bot.command(name='help')
     async def help(context: commands.Context):
         if not is_DM(context.channel):
-            await context.send(f'>>> 🍰 Hi! My current commands are:\n**{COMMAND_PREFIX}repeat** I will repeat anything you say\n**{COMMAND_PREFIX}standoff** Want to do a cowboy stand off against a friend? 🤠\n**/confess** in the confessions channel to send an anonymous confessions\n**{COMMAND_PREFIX}roles** Shows all the roles in the server\n\n**For Testers**\n**{COMMAND_PREFIX}embed** Allows you to create an embeded message\n**/poll** Allows you to create polls\n**{COMMAND_PREFIX}role_select** Sends the message to allow people to select roles\n**{COMMAND_PREFIX}role_exclude** Allows you to exclude roles from Role Select\n**{COMMAND_PREFIX}reset_role_exclude** Resets the list of excluded roles\n\n**For admins**\n**{COMMAND_PREFIX}purge** Will delete x number of messages from the current channel\n**{COMMAND_PREFIX}set_welcome** Sets the Welcome channel\n**{COMMAND_PREFIX}set_audit** Sets the AuditLog channel \n**{COMMAND_PREFIX}set_confessions** Sets the Confessions channel\n**{COMMAND_PREFIX}enable_confessions** Enable of disable confessions for this server\n**{COMMAND_PREFIX}enable_audit** Enable of disable Audit Logs in this server\n\nIf you need help with individual commands type the command!')
+            await context.send(f'>>> 🍰 Hi! My current commands are:\n**{COMMAND_PREFIX}repeat** I will repeat anything you say\n**{COMMAND_PREFIX}standoff** Want to do a cowboy stand off against a friend? 🤠\n**/confess** in the confessions channel to send an anonymous confessions\n**{COMMAND_PREFIX}roles** Shows all the roles in the server\n\n**For Admins**\n**{COMMAND_PREFIX}embed** Allows you to create an embeded message\n**/poll** Allows you to create polls\n**{COMMAND_PREFIX}role_select** Sends the message to allow people to select roles\n**{COMMAND_PREFIX}role_exclude** Allows you to exclude roles from Role Select\n**{COMMAND_PREFIX}reset_role_exclude** Resets the list of excluded roles\n**{COMMAND_PREFIX}purge** Will delete x number of messages from the current channel\n**{COMMAND_PREFIX}set_welcome** Sets the Welcome channel\n**{COMMAND_PREFIX}set_audit** Sets the AuditLog channel \n**{COMMAND_PREFIX}set_confessions** Sets the Confessions channel\n**{COMMAND_PREFIX}enable_confessions** Enable of disable confessions for this server\n**{COMMAND_PREFIX}enable_audit** Enable of disable Audit Logs in this server\n\nIf you need help with individual commands type the command!')
 
         
     # ! Usage: !purge [limit] | Depricated-ish
@@ -922,10 +923,9 @@ class Server:
 
 
 # TODO: Replace depricated methods
-# TODO: Make production help message
 # TODO: Only use 20 emojis instead of close to 100 (list of dictionaries instead of a single dictionary)
 
 # * Commit:
-# - Fixed roles. Only 20 reactions per message
-# - Added minor role cannot unpick said role
+# - Added a check to see if emoji was in dictionary to prevent error when adding or removing unknown emoji
+# - Updated help messages to remove Testers section
 # - 
