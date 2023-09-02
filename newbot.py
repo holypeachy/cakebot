@@ -25,17 +25,12 @@ import json
 serverDict = dict()
 welcomeMessageDict = dict()
 goodbyeDict = dict()
-idsDict = { 'vibes': 339550706342035456, 'sufyaan': 851221324126093382, 'tayimo': 403249158187778067}
+idsDict = { 'vibes': 339550706342035456, 'sufyaan': 851221324126093382, 'tayimo': 403249158187778067, 'kena': 700077496909037679}
 bot = None
 
-role_select_emojis = ['😀', '😁', '😂', '😃', '😄', '😅', '😆', '😉', '😊', '🙂',
-'🙃', '😍', '🥰', '😘', '😗', '😙', '😚', '😋', '😛', '😝',
-'😜', '🤪', '🤨', '🧐', '🤓', '😎', '🥸', '🥹', '🥺', '😭',
-'😢', '😣', '😤', '😡', '👿', '😾', '😿', '😹', '😸', '🙀',
-'😼', '😽', '🐶', '🐕', '🐩', '🐺', '🦊', '🦝', '🦌',
-'🐿', '🦔', '🐆', '🐿', '🐞', '🐜', '🐝', '🪧', '🏁',
-'🎌', '🏳️', '🏳️‍🌈', '🏴‍☠️', '🎐', '🛸', '🪐', '🌌',
-'🌠', '✨', '💫', '🌛', '🌜', '🌝', '🌚', '🌑', '🌒']
+role_select_emojis = [
+    "😇","❤️","💥","👍","😭","💵","😘","🍕","😍","✨","🎉","😃","💕","🥺","⚠️","🔥","😊","🐣","🖤","🐼","🙄","🥳","💯", "👻",
+]
 
 
 def start_bot():
@@ -229,7 +224,10 @@ def event_methods():
         if message.author.id in idsValues:
             print(f'{message.author.global_name} rolled a {random_int}!')
             if not is_DM(message.channel) and ( 1 <= random_int <= 5):
-                await message.channel.send(f'Shut up {message.author.global_name}')
+                if message.author.id == idsDict['kena']:
+                    await message.channel.send(f'Kena is the Kueen!')
+                else:
+                    await message.channel.send(f'Shut up {message.author.global_name}')
                 
 
         # Message log
@@ -253,7 +251,8 @@ def event_methods():
 
         # Is channel None? AND is the message the same as the stored one AND is the the user not the bot 
         if channel and payload.message_id in serverDict[payload.guild_id].role_select_messages and payload.user_id != bot.user.id:
-            roleDict = serverDict[payload.guild_id].role_select_dict
+            message_index = serverDict[payload.guild_id].role_select_messages.index(payload.message_id)
+            roleDict = serverDict[payload.guild_id].role_select_dicts[message_index]
             if payload.emoji.__str__() in roleDict.keys():
                 guild = bot.get_guild(payload.guild_id)
                 role_to_add = guild.get_role(roleDict[payload.emoji.__str__()])
@@ -267,7 +266,8 @@ def event_methods():
 
         # Is channel None? AND is the message the same as the stored one AND is the the user not the bot 
         if channel and payload.message_id in serverDict[payload.guild_id].role_select_messages and payload.user_id != bot.user.id:
-            roleDict = serverDict[payload.guild_id].role_select_dict
+            message_index = serverDict[payload.guild_id].role_select_messages.index(payload.message_id)
+            roleDict = serverDict[payload.guild_id].role_select_dicts[message_index]
             if payload.emoji.__str__() in roleDict.keys():
                 guild = bot.get_guild(payload.guild_id)
                 role_to_remove = guild.get_role(roleDict[payload.emoji.__str__()])
@@ -838,47 +838,61 @@ async def is_role_select_setup(guild_id : int):
 async def role_select_function(a_channel: discord.TextChannel, a_guild: discord.Guild, a_author: discord.Member):
     if not is_DM(a_channel):
         if can_manage_channels(a_author):
+            # We reset role_select_messages
             serverDict[a_guild.id].role_select_messages = []
+
             available_roles = a_guild.roles
-
+            # We filter out the roles we don't wanna include
             available_roles = list(filter(lambda role: role.name != '@everyone', available_roles))
+            available_roles = list(filter(lambda role: not role.id in serverDict[a_guild.id].role_select_excluded, available_roles))
 
-            for role_id in serverDict[a_guild.id].role_select_excluded:
-                available_roles = list(filter(lambda role: role.id != role_id, available_roles))
 
-            role_info_dict = {}
+            role_dicts = []
+            role_dicts_index = 0
+            emoji_index = 0
 
+            current_dict = {}
+            role_dicts = [current_dict]
             for i,role in enumerate(available_roles):
-                role_info_dict[role_select_emojis[i]] = role.id
+                dic = role_dicts[role_dicts_index]
+                dic[role_select_emojis[emoji_index]] = role.id
+                emoji_index += 1
+
+                # After 20 roles we move on the next dictionary in the list. We reset the emoji index
+                if (i != 0 and i % 19 == 0):
+                    current_dict = {}
+                    role_dicts.append(current_dict)
+
+                    role_dicts_index += 1
+                    emoji_index = 0
+
             
-            serverDict[a_guild.id].role_select_dict = role_info_dict
+            serverDict[a_guild.id].role_select_dicts = role_dicts # We store
 
-            message_list = ['']
-            current_message_index = 0
-            for i,key in enumerate(role_info_dict):
-                message_list[current_message_index] += f'{key} - {a_guild.get_role(role_info_dict[key]).name}\n'
-                if i % 19 == 0 and i != 0:
-                    message_list.append('')
-                    current_message_index += 1
+            select_role_messages = []
+            for d in role_dicts:
+                select_role_messages.append('')
+                index = role_dicts.index(d)
+                for key in d:
+                    select_role_messages[index] += f'{key} - {a_guild.get_role(d[key]).name}\n'
 
-            for i,current_message in enumerate(message_list):
+            # We send out the messages and we store the message ids and channel id where we posted
+            for i,message in enumerate(select_role_messages):
                 if i == 0:
-                    embededMessage = discord.Embed(title=f"🫧  Role Select", description=message_list[0], color=0x9dc8d1)
+                    embededMessage = discord.Embed(title=f"🫧  Role Select", description=message, color=0x9dc8d1)
                     embededMessage.set_thumbnail(url=a_guild.icon.url)
                     message_object = await a_channel.send(embed=embededMessage)
                     serverDict[a_guild.id].role_select_messages.append(message_object.id)
                     serverDict[a_guild.id].role_select_channel = message_object.channel.id
                 else:
-                    embededMessage = discord.Embed(description=current_message, color=0x9dc8d1)
+                    embededMessage = discord.Embed(description=message, color=0x9dc8d1)
                     message_object = await a_channel.send(embed=embededMessage)
                     serverDict[a_guild.id].role_select_messages.append(message_object.id)
 
-            current_message_index = 0
-            for i,role_id in enumerate(role_info_dict):
-                current_message_object = await a_channel.fetch_message(serverDict[a_guild.id].role_select_messages[current_message_index])
-                await current_message_object.add_reaction(role_id)
-                if i % 19 == 0 and i != 0:
-                    current_message_index += 1
+            for i,d in enumerate(role_dicts):
+                current_message_object = await a_channel.fetch_message(serverDict[a_guild.id].role_select_messages[i])
+                for key in d:
+                    await current_message_object.add_reaction(key)
 
             save_servers()
 
@@ -900,7 +914,7 @@ class Server:
         self.role_select_messages = []
         self.role_select_channel = 0
         self.role_select_excluded = []
-        self.role_select_dict = {}
+        self.role_select_dicts = []
     
     def __str__(self) -> str:
         return f'id: {self.id}  welcome_channel_id: {self.welcome_channel_id}  audit_channel_id: {self.audit_channel_id}  confessions_channel_id: {self.confessions_channel_id}  confessions_allowed: {self.confessions_allowed}  audit_enabled: {self.audit_enabled}  welcome_enabled: {self.welcome_enabled}'
@@ -919,13 +933,13 @@ class Server:
         self.role_select_messages = dictionary['role_select_messages']
         self.role_select_channel = dictionary['role_select_channel']
         self.role_select_excluded = dictionary['role_select_excluded']
-        self.role_select_dict = dictionary['role_select_dict']
+        self.role_select_dicts = dictionary['role_select_dicts']
 
 
 # TODO: Replace depricated methods
-# TODO: Only use 20 emojis instead of close to 100 (list of dictionaries instead of a single dictionary)
 
 # * Commit:
-# - Added a check to see if emoji was in dictionary to prevent error when adding or removing unknown emoji
-# - Updated help messages to remove Testers section
+# - Added Kena to random messages
+# - Only 20 emojis are now used for the roles
+# - Renamed role_select_dict to role_select_dicts because it is now a list of dictionaries
 # - 
