@@ -1,16 +1,15 @@
 import requests
 import json
+from config import RAPIAPI_KEY
 
-url = "https://weatherapi-com.p.rapidapi.com/current.json"
-
-querystring = {"q":"Kyoto"}
+url = "https://porn-gallery.p.rapidapi.com/pornos/Natasha%20Nice"
 
 headers = {
-	"X-RapidAPI-Key": "14e9fe8769msh499735591a0acb0p1752f2jsn57f9e03212c5",
-	"X-RapidAPI-Host": "weatherapi-com.p.rapidapi.com"
+	"X-RapidAPI-Key": f"{RAPIAPI_KEY}",
+	"X-RapidAPI-Host": "porn-gallery.p.rapidapi.com"
 }
 
-response = requests.get(url, headers=headers, params=querystring)
+response = requests.get(url, headers=headers)
 
 with open('test.json', 'w') as file:
     

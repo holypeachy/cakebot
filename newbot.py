@@ -51,6 +51,20 @@ weather_headers = {
 	"X-RapidAPI-Host": "weatherapi-com.p.rapidapi.com"
 }
 
+# Cats
+cats_url = "https://cat14.p.rapidapi.com/v1/images/search"
+cats_headers = {
+	"X-RapidAPI-Key": f"{RAPIAPI_KEY}",
+	"X-RapidAPI-Host": "cat14.p.rapidapi.com"
+}
+
+# Porn Star API
+pstar_url = "https://papi-pornstarsapi.p.rapidapi.com/pornstars/"
+pstar_headers = {
+	"X-RapidAPI-Key": f"{RAPIAPI_KEY}",
+	"X-RapidAPI-Host": "papi-pornstarsapi.p.rapidapi.com"
+}
+
 
 def start_bot():
     # Intents
@@ -655,7 +669,7 @@ def command_methods():
                             'https://images02.military.com/sites/default/files/styles/full/public/2023-05/1time%20chuck%20norris%20water%201200.jpg', 'https://dlqxt4mfnxo6k.cloudfront.net/homesbytaber.com/aHR0cHM6Ly9zMy5hbWF6b25hd3MuY29tL2J1aWxkZXJjbG91ZC8yZDE2YzhkYzI2NmQxZGQyMDZkOTBhZDQ1YzRlNGViNi5qcGVn/webp/800/800',]
             response = requests.get(chuck_url, headers=chuck_headers)
             embededMessage = discord.Embed(title=f"🫧  Did you know?", description=response.json()['value'], color=0x9dc8d1)
-            embededMessage.set_author(name=f'{context.author.global_name}', icon_url=context.author.avatar.url)
+            embededMessage.set_author(name=f'{bot.user.display_name}', icon_url=bot.user.avatar.url)
             embededMessage.set_image(url=f'{chuck_images[random.randint(0, len(chuck_images) - 1)]}')
             await context.channel.send(embed=embededMessage)
 
@@ -684,6 +698,42 @@ def command_methods():
     async def weather_error(context: commands.Context, error):
         if not is_DM(context.channel):
             await context.channel.send(f'The command is:\n{COMMAND_PREFIX}weather New York')
+
+
+    @bot.command(name='cat')
+    async def cat(context: commands.Context):
+        if not is_DM(context.channel):
+            querystring = {"limit":"1"}
+
+            response = requests.get(cats_url, headers=cats_headers, params=querystring)
+            json_response = response.json()
+
+            embededMessage = discord.Embed(title=f"🫧  Here is your cat image 🐱", color=0x9dc8d1)
+            embededMessage.set_author(name=f'{context.author.global_name}', icon_url=context.author.avatar.url)
+            embededMessage.set_image(url=f"{json_response[0]['url']}")
+            await context.channel.send(embed=embededMessage)
+
+
+    @bot.command(name='pstar')
+    async def pstar_info(context: commands.Context, *, arg):
+        if is_DM(context.channel):
+            querystring = {"name":f"{arg}"}
+            response = requests.get(pstar_url, headers=pstar_headers, params=querystring)
+            json_response = response.json()['results'][0]
+
+            message = f"Age: {json_response['age']}\nDoB: {json_response['date_of_birth']}\nNationality: {json_response['nationality']}\nEthnicity: {json_response['ethnicity']}\nHeight: {json_response['height']}\nCup Size: {json_response['cup_size']}\n"
+            embededMessage = discord.Embed(title=f"🫧  {json_response['name']}", description=message, color=0x9dc8d1)
+            embededMessage.set_author(name=f'{context.author.global_name}', icon_url=context.author.avatar.url)
+            embededMessage.set_image(url=f"{json_response['images'][1]['image_link']}")
+            await context.author.send(embed=embededMessage)
+
+    @pstar_info.error
+    async def pstar_info_error(context: commands.Context, error):
+        if is_DM(context.channel):
+            await context.author.send('The command is:\n!pstar Sasha Grey')
+            
+
+
 
 
 def slash_commands_methods():
