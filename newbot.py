@@ -9,6 +9,7 @@ import responses
 # Settings from config.py
 from config import TOKEN
 from config import COMMAND_PREFIX
+from config import RAPIAPI_KEY
 
 # Errors
 from discord.ext.commands import CommandNotFound
@@ -19,6 +20,7 @@ from  asyncio import TimeoutError
 import pytz
 import random
 import json
+import requests
 
 
 # Global vars
@@ -31,6 +33,23 @@ bot = None
 role_select_emojis = [
     "😇","❤️","💥","👍","😭","💵","😘","🍕","😍","✨","🎉","😃","💕","🥺","⚠️","🔥","😊","🐣","🖤","🐼","🙄","🥳","💯", "👻",
 ]
+
+
+# APIs
+# Chuck Norris API
+chuck_url = "https://matchilling-chuck-norris-jokes-v1.p.rapidapi.com/jokes/random"
+chuck_headers = {
+	"accept": "application/json",
+	"X-RapidAPI-Key": f"{RAPIAPI_KEY}",
+	"X-RapidAPI-Host": "matchilling-chuck-norris-jokes-v1.p.rapidapi.com"
+}
+
+# Weather
+weather_url = "https://weatherapi-com.p.rapidapi.com/current.json"
+weather_headers = {
+	"X-RapidAPI-Key": f"{RAPIAPI_KEY}",
+	"X-RapidAPI-Host": "weatherapi-com.p.rapidapi.com"
+}
 
 
 def start_bot():
@@ -476,7 +495,7 @@ def command_methods():
     @bot.command(name='help')
     async def help(context: commands.Context):
         if not is_DM(context.channel):
-            await context.send(f'>>> 🍰 Hi! My current commands are:\n**{COMMAND_PREFIX}repeat** I will repeat anything you say\n**{COMMAND_PREFIX}standoff** Want to do a cowboy stand off against a friend? 🤠\n**/confess** in the confessions channel to send an anonymous confessions\n**{COMMAND_PREFIX}roles** Shows all the roles in the server\n\n**For Admins**\n**{COMMAND_PREFIX}embed** Allows you to create an embeded message\n**/poll** Allows you to create polls\n**{COMMAND_PREFIX}role_select** Sends the message to allow people to select roles\n**{COMMAND_PREFIX}role_exclude** Allows you to exclude roles from Role Select\n**{COMMAND_PREFIX}reset_role_exclude** Resets the list of excluded roles\n**{COMMAND_PREFIX}purge** Will delete x number of messages from the current channel\n**{COMMAND_PREFIX}set_welcome** Sets the Welcome channel\n**{COMMAND_PREFIX}set_audit** Sets the AuditLog channel \n**{COMMAND_PREFIX}set_confessions** Sets the Confessions channel\n**{COMMAND_PREFIX}enable_confessions** Enable of disable confessions for this server\n**{COMMAND_PREFIX}enable_audit** Enable of disable Audit Logs in this server\n\nIf you need help with individual commands type the command!')
+            await context.send(f'>>> 🍰 Hi! My current commands are:\n**{COMMAND_PREFIX}repeat** I will repeat anything you say\n**{COMMAND_PREFIX}standoff** Want to do a cowboy stand off against a friend? 🤠\n**/confess** in the confessions channel to send an anonymous confessions\n**{COMMAND_PREFIX}chuck** Wanna know some cool, Chuck Norris facts?\n**{COMMAND_PREFIX}weather** Allows you to see the current weather conditions of a location of your choosing\n\n**{COMMAND_PREFIX}roles** Shows all the roles in the server\n\n**For Admins**\n**{COMMAND_PREFIX}embed** Allows you to create an embeded message\n**/poll** Allows you to create polls\n**{COMMAND_PREFIX}role_select** Sends the message to allow people to select roles\n**{COMMAND_PREFIX}role_exclude** Allows you to exclude roles from Role Select\n**{COMMAND_PREFIX}reset_role_exclude** Resets the list of excluded roles\n**{COMMAND_PREFIX}purge** Will delete x number of messages from the current channel\n**{COMMAND_PREFIX}set_welcome** Sets the Welcome channel\n**{COMMAND_PREFIX}set_audit** Sets the AuditLog channel \n**{COMMAND_PREFIX}set_confessions** Sets the Confessions channel\n**{COMMAND_PREFIX}enable_confessions** Enable of disable confessions for this server\n**{COMMAND_PREFIX}enable_audit** Enable of disable Audit Logs in this server\n\nIf you need help with individual commands type the command!')
 
         
     # ! Usage: !purge [limit] | Depricated-ish
@@ -625,6 +644,46 @@ def command_methods():
             
             else:
                 await context.channel.send(f'Sorry, only an admin can do that')
+
+
+    @bot.command(name='chuck')
+    async def chuck_random(context: commands.Context):
+        if not is_DM(context.channel):
+            chuck_images = ['https://images01.military.com/sites/default/files/styles/full/public/2021-04/chucknorris.jpeg.jpg?itok=2b4A6n29', 'http://ultimateactionmovies.com/wp-content/uploads/2017/12/Chuck-Norris.jpg',
+                            'https://www.joblo.com/wp-content/uploads/2023/05/Chuck-Norris-Invasion-USA-jpg.webp', 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b1/Chuck_Norris%2C_The_Delta_Force_1986.jpg/800px-Chuck_Norris%2C_The_Delta_Force_1986.jpg',
+                            'https://www.syfy.com/sites/syfy/files/2023/03/walker_texas_ranger.jpg', 'https://images.fineartamerica.com/images/artworkimages/mediumlarge/2/chuck-norris-in-walker-texas-ranger-1993--album.jpg',
+                            'https://images02.military.com/sites/default/files/styles/full/public/2023-05/1time%20chuck%20norris%20water%201200.jpg', 'https://dlqxt4mfnxo6k.cloudfront.net/homesbytaber.com/aHR0cHM6Ly9zMy5hbWF6b25hd3MuY29tL2J1aWxkZXJjbG91ZC8yZDE2YzhkYzI2NmQxZGQyMDZkOTBhZDQ1YzRlNGViNi5qcGVn/webp/800/800',]
+            response = requests.get(chuck_url, headers=chuck_headers)
+            embededMessage = discord.Embed(title=f"🫧  Did you know?", description=response.json()['value'], color=0x9dc8d1)
+            embededMessage.set_author(name=f'{context.author.global_name}', icon_url=context.author.avatar.url)
+            embededMessage.set_image(url=f'{chuck_images[random.randint(0, len(chuck_images) - 1)]}')
+            await context.channel.send(embed=embededMessage)
+
+
+    @bot.command(name='weather')
+    async def weather(context: commands.Context, arg):
+        if not is_DM(context.channel):
+            querystring = {"q":f"{arg}"}
+            response = requests.get(weather_url, headers=weather_headers, params=querystring)
+
+            json_response = response.json()
+            if 'error' in json_response.keys():
+                await context.channel.send(f"⚠️ {json_response['error']['message']}")
+                return
+            location = json_response['location']
+            current = json_response['current']
+            
+            report = f"🌬️  Condition: {current['condition']['text']}\n🌡️  Temperature: {current['temp_f']}F ({current['temp_c']}C)\n🎁  Feels Like: {current['feelslike_f']}F ({current['feelslike_c']}C)\n "
+            embededMessage = discord.Embed(title=f"{location['name']}, {location['region']} ({location['country']})", description=report, color=0x9dc8d1)
+            embededMessage.set_author(name=f'Weather in:', icon_url=f"https:{current['condition']['icon']}")
+            embededMessage.set_thumbnail(url= f"https:{current['condition']['icon']}")
+            embededMessage.set_footer(text=f"⌚ Local Time: {location['localtime']}")
+            await context.channel.send(embed=embededMessage)
+
+    @weather.error
+    async def weather_error(context: commands.Context, error):
+        if not is_DM(context.channel):
+            await context.channel.send(f'The command is:\n{COMMAND_PREFIX}weather "New York"\nor\n{COMMAND_PREFIX}weather NYC')
 
 
 def slash_commands_methods():
@@ -937,9 +996,8 @@ class Server:
 
 
 # TODO: Replace depricated methods
+# TODO: FIX 20 then 19 problem with role_select
 
 # * Commit:
-# - Added Kena to random messages
-# - Only 20 emojis are now used for the roles
-# - Renamed role_select_dict to role_select_dicts because it is now a list of dictionaries
+# - Added chuck and weather commands
 # - 
