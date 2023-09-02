@@ -661,7 +661,7 @@ def command_methods():
 
 
     @bot.command(name='weather')
-    async def weather(context: commands.Context, arg):
+    async def weather(context: commands.Context, *, arg):
         if not is_DM(context.channel):
             querystring = {"q":f"{arg}"}
             response = requests.get(weather_url, headers=weather_headers, params=querystring)
@@ -683,7 +683,7 @@ def command_methods():
     @weather.error
     async def weather_error(context: commands.Context, error):
         if not is_DM(context.channel):
-            await context.channel.send(f'The command is:\n{COMMAND_PREFIX}weather "New York"\nor\n{COMMAND_PREFIX}weather NYC')
+            await context.channel.send(f'The command is:\n{COMMAND_PREFIX}weather New York')
 
 
 def slash_commands_methods():
@@ -999,5 +999,4 @@ class Server:
 # TODO: FIX 20 then 19 problem with role_select
 
 # * Commit:
-# - Added chuck and weather commands
 # - 
