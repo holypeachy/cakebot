@@ -35,7 +35,7 @@ role_select_emojis = [
 ]
 
 
-# APIs
+# ? APIs
 # Chuck Norris API
 chuck_url = "https://matchilling-chuck-norris-jokes-v1.p.rapidapi.com/jokes/random"
 chuck_headers = {
@@ -64,6 +64,14 @@ pstar_headers = {
 	"X-RapidAPI-Key": f"{RAPIAPI_KEY}",
 	"X-RapidAPI-Host": "papi-pornstarsapi.p.rapidapi.com"
 }
+
+# Porn Gallery API
+lewd_url = "https://porn-gallery.p.rapidapi.com/pornos/"
+lewd_headers = {
+	"X-RapidAPI-Key": f"{RAPIAPI_KEY}",
+	"X-RapidAPI-Host": "porn-gallery.p.rapidapi.com"
+}
+current_lewd_users = []
 
 
 def start_bot():
@@ -94,10 +102,13 @@ def start_bot():
 
     slash_commands_methods()
 
+    lewd_commands()
+
     # Run bot
     bot.run(TOKEN)
 
 
+# Command Categories
 def event_methods():
 
     @bot.event
@@ -220,6 +231,7 @@ def event_methods():
         serverDict[guild.id] = Server(guild.id)
         save_servers()
 
+
     @bot.event
     async def on_guild_remove(guild: discord.Guild):
         # Bot leaves guild, gets kicked, or banned
@@ -264,17 +276,14 @@ def event_methods():
                 
 
         # Message log
+        #if not is_DM(message.channel):
         print(f"\n\"{message.author.global_name}\" / \"{message.author}\" said: \"{str(message.content)}\" in \"{message.channel}\" server: \"{message.guild}\"")
 
         # * This actually processes the commands since we overrode on_message()
         await bot.process_commands(message)
 
         # Custom text messages
-        if is_DM(message.channel):
-            response = responses.handle_dm(message.content)
-            if response != '':
-                await message.channel.send(response)
-        else:
+        if not is_DM(message.channel):
             await handle_message(message)
 
 
@@ -509,7 +518,7 @@ def command_methods():
     @bot.command(name='help')
     async def help(context: commands.Context):
         if not is_DM(context.channel):
-            await context.send(f'>>> 🍰 Hi! My current commands are:\n**{COMMAND_PREFIX}repeat** I will repeat anything you say\n**{COMMAND_PREFIX}standoff** Want to do a cowboy stand off against a friend? 🤠\n**/confess** in the confessions channel to send an anonymous confessions\n**{COMMAND_PREFIX}chuck** Wanna know some cool, Chuck Norris facts?\n**{COMMAND_PREFIX}weather** Allows you to see the current weather conditions of a location of your choosing\n\n**{COMMAND_PREFIX}roles** Shows all the roles in the server\n\n**For Admins**\n**{COMMAND_PREFIX}embed** Allows you to create an embeded message\n**/poll** Allows you to create polls\n**{COMMAND_PREFIX}role_select** Sends the message to allow people to select roles\n**{COMMAND_PREFIX}role_exclude** Allows you to exclude roles from Role Select\n**{COMMAND_PREFIX}reset_role_exclude** Resets the list of excluded roles\n**{COMMAND_PREFIX}purge** Will delete x number of messages from the current channel\n**{COMMAND_PREFIX}set_welcome** Sets the Welcome channel\n**{COMMAND_PREFIX}set_audit** Sets the AuditLog channel \n**{COMMAND_PREFIX}set_confessions** Sets the Confessions channel\n**{COMMAND_PREFIX}enable_confessions** Enable of disable confessions for this server\n**{COMMAND_PREFIX}enable_audit** Enable of disable Audit Logs in this server\n\nIf you need help with individual commands type the command!')
+            await context.send(f'>>> 🍰 Hi! My current commands are:\n**{COMMAND_PREFIX}repeat** I will repeat anything you say\n**{COMMAND_PREFIX}standoff** Want to do a cowboy stand off against a friend? 🤠\n**/confess** in the confessions channel to send an anonymous confessions\n**{COMMAND_PREFIX}chuck** Wanna know some cool, Chuck Norris facts?\n**{COMMAND_PREFIX}weather** Allows you to see the current weather conditions of a location of your choosing\n**{COMMAND_PREFIX}cat** Wanna see a cute cat picture?\n\n**{COMMAND_PREFIX}roles** Shows all the roles in the server\n\n🔞 Adult Commands (DM Only):\n**{COMMAND_PREFIX}pstar** Wanna see some \"stats\" on your favorite star?\n**{COMMAND_PREFIX}lewd** Want some tasty pics from your favorite categories? 😋\n\n**For Admins**\n**{COMMAND_PREFIX}embed** Allows you to create an embeded message\n**/poll** Allows you to create polls\n**{COMMAND_PREFIX}role_select** Sends the message to allow people to select roles\n**{COMMAND_PREFIX}role_exclude** Allows you to exclude roles from Role Select\n**{COMMAND_PREFIX}reset_role_exclude** Resets the list of excluded roles\n**{COMMAND_PREFIX}purge** Will delete x number of messages from the current channel\n**{COMMAND_PREFIX}set_welcome** Sets the Welcome channel\n**{COMMAND_PREFIX}set_audit** Sets the AuditLog channel \n**{COMMAND_PREFIX}set_confessions** Sets the Confessions channel\n**{COMMAND_PREFIX}enable_confessions** Enable of disable confessions for this server\n**{COMMAND_PREFIX}enable_audit** Enable of disable Audit Logs in this server\n\nIf you need help with individual commands type the command!')
 
         
     # ! Usage: !purge [limit] | Depricated-ish
@@ -714,30 +723,7 @@ def command_methods():
             await context.channel.send(embed=embededMessage)
 
 
-    @bot.command(name='pstar')
-    async def pstar_info(context: commands.Context, *, arg):
-        if is_DM(context.channel):
-            querystring = {"name":f"{arg}"}
-            response = requests.get(pstar_url, headers=pstar_headers, params=querystring)
-            json_response = response.json()['results'][0]
-
-            message = f"Age: {json_response['age']}\nDoB: {json_response['date_of_birth']}\nNationality: {json_response['nationality']}\nEthnicity: {json_response['ethnicity']}\nHeight: {json_response['height']}\nCup Size: {json_response['cup_size']}\n"
-            embededMessage = discord.Embed(title=f"🫧  {json_response['name']}", description=message, color=0x9dc8d1)
-            embededMessage.set_author(name=f'{context.author.global_name}', icon_url=context.author.avatar.url)
-            embededMessage.set_image(url=f"{json_response['images'][1]['image_link']}")
-            await context.author.send(embed=embededMessage)
-
-    @pstar_info.error
-    async def pstar_info_error(context: commands.Context, error):
-        if is_DM(context.channel):
-            await context.author.send('The command is:\n!pstar Sasha Grey')
-            
-
-
-
-
 def slash_commands_methods():
-
     @bot.tree.command(name='confess', description='Tell a secret while remaining anonymous')
     @app_commands.guild_only()
     @app_commands.check(can_confess)
@@ -794,8 +780,111 @@ def slash_commands_methods():
             await interaction.response.send_message('Uknown Error, please report to admin or dev.', ephemeral=True)
 
 
+def lewd_commands():
+    @bot.command(name='pstar')
+    async def pstar_info(context: commands.Context, *, arg):
+        if is_DM(context.channel):
+            querystring = {"name":f"{arg}"}
+            response = requests.get(pstar_url, headers=pstar_headers, params=querystring)
+            response_check = response.json()
+            if 'message' in response_check:
+                await context.author.send('Sorry, but this service is temporarily down! 😔')
+                return
+            json_response = response.json()['results'][0]
+            
+            message = f"Age: {json_response['age']}\nDoB: {json_response['date_of_birth']}\nNationality: {json_response['nationality']}\nEthnicity: {json_response['ethnicity']}\nHeight: {json_response['height']}\nCup Size: {json_response['cup_size']}\n"
+            embededMessage = discord.Embed(title=f"🫧  {json_response['name']}", description=message, color=0x9dc8d1)
+            embededMessage.set_author(name=f'{context.author.global_name}', icon_url=context.author.avatar.url)
+            embededMessage.set_image(url=f"{json_response['images'][1]['image_link']}")
+            await context.author.send(embed=embededMessage)
 
-# ! Depricated, need to implement new way of handling these
+    @pstar_info.error
+    async def pstar_info_error(context: commands.Context, error):
+        if is_DM(context.channel):
+            await context.author.send('The command is:\n!pstar Sasha Grey')
+
+
+    @bot.command(name='lewd')
+    async def lewd(context: commands.Context, *, arg):
+        if is_DM(context.channel):
+            if context.author.id in current_lewd_users:
+               return
+            else:
+                current_lewd_users.append(context.author.id)
+            def check_for_answer(m: discord.Message):
+                    if m.content.lower().startswith('n') and m.channel == context.channel and m.author == context.author:
+                        return True
+                    elif m.content.lower().startswith('s') and m.channel == context.channel and m.author == context.author:
+                        return True
+                    else:
+                        return False
+
+            query_url = lewd_url + f"{arg.replace(' ', '%20')}"
+            async with context.typing():
+                response = requests.get(query_url, headers=lewd_headers)
+
+            try:
+                json_response = response.json()
+            except Exception as e:
+                await context.author.send(f'No results for \"{arg}\"')
+                current_lewd_users.remove(context.author.id)
+                return
+
+            pic_list = []
+            for result in json_response['results']:
+                for link in result['images']:
+                    pic_list.append(link)
+
+            pic_list = list(set(pic_list))
+            # Shuffle list
+            for target in range(0, len(pic_list) - 1):
+                random_num = 0
+                if target < len(pic_list) - 2:
+                    random_num = random.randint(target + 1, len(pic_list) - 1)
+                elif target == len(pic_list) - 2:
+                    random_num = random.randint(0, len(pic_list) - 3)
+                else:
+                    random_num = random.randint(0, len(pic_list) - 2)
+                     
+                tempHolder = pic_list[target]
+                pic_list[target] = pic_list[random_num]
+                pic_list[random_num] = tempHolder
+
+
+            current_link_index = 0
+            embededMessage = discord.Embed(title=f"🫧  Results for: {arg}", color=0x9dc8d1)
+            embededMessage.set_image(url=f"{pic_list[current_link_index]}")
+            embededMessage.set_footer(text=f'{current_link_index + 1}/{len(pic_list)} type \'n\' for next or \'s\' for stop. If you don\'t pick an answer this conversation will timeout in 120s')
+            previous_message = await context.author.send(embed=embededMessage)
+            while(current_link_index < len(pic_list)):
+                try:
+                    answer = await bot.wait_for("message", check=check_for_answer, timeout=120)
+                    if answer.content.lower() == 'n':
+                        await previous_message.delete()
+                        current_link_index += 1
+                        embededMessage = discord.Embed(title=f"🫧  Results for: {arg}", color=0x9dc8d1)
+                        embededMessage.set_image(url=f"{pic_list[current_link_index]}")
+                        embededMessage.set_footer(text=f'{current_link_index + 1}/{len(pic_list)}\ntype \'n\' for next or \'s\' for stop. If you don\'t pick an answer this conversation will timeout in 120s')
+                        previous_message = await context.author.send(embed=embededMessage)
+                    elif answer.content.lower() == 's':
+                        await context.author.send('You have selected \'s\', this interaction will now stop')
+                        current_lewd_users.remove(context.author.id)
+                        break
+                except Exception as e:
+                    if isinstance(e, TimeoutError):
+                        await context.author.send('⚠️ Timeout, I will assume you do not want to continue this interaction')
+                        current_lewd_users.remove(context.author.id)
+                        break
+                    else:
+                        print('Error in lewd command' + e.__str__())
+
+    @lewd.error
+    async def lewd_error(context: commands.Context, error):
+        if is_DM(context.channel):
+            await context.author.send(f'The command is something like:\n{COMMAND_PREFIX}lewd Sasha Grey\nor\n{COMMAND_PREFIX}lewd Ebony')
+
+
+# Other Methods
 async def handle_message(original_message):
     try:
         response = responses.handle_response(str(original_message.content))
@@ -968,7 +1057,7 @@ async def role_select_function(a_channel: discord.TextChannel, a_guild: discord.
                 emoji_index += 1
 
                 # After 20 roles we move on the next dictionary in the list. We reset the emoji index
-                if (i != 0 and i % 19 == 0):
+                if (i != 0 and (i + 1) % 20 == 0):
                     current_dict = {}
                     role_dicts.append(current_dict)
 
@@ -1045,8 +1134,12 @@ class Server:
         self.role_select_dicts = dictionary['role_select_dicts']
 
 
-# TODO: Replace depricated methods
-# TODO: FIX 20 then 19 problem with role_select
+# TODO: 
 
 # * Commit:
+# - Added pstar and lewd commands.
+# - Removed handle_dm method
+# - Fixed 20 then 19 roles in role_select. Thanks Krayon, you are a genius.
+# - Added cat command
+# - Updated help command
 # - 

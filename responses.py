@@ -19,7 +19,3 @@ def handle_response(message) -> str:
     
     else:
         return ''
-
-def handle_dm(message) ->str:
-    p_message = message.lower()
-    return 'Hi! 👋 There.'

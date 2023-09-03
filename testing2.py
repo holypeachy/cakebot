@@ -2,14 +2,13 @@ import requests
 import json
 from config import RAPIAPI_KEY
 
-url = "https://porn-gallery.p.rapidapi.com/pornos/Natasha%20Nice"
-
-headers = {
+pstar_url = "https://papi-pornstarsapi.p.rapidapi.com/pornstars/"
+pstar_headers = {
 	"X-RapidAPI-Key": f"{RAPIAPI_KEY}",
-	"X-RapidAPI-Host": "porn-gallery.p.rapidapi.com"
+	"X-RapidAPI-Host": "papi-pornstarsapi.p.rapidapi.com"
 }
 
-response = requests.get(url, headers=headers)
+response = requests.get(pstar_url, headers=pstar_headers)
 
 with open('test.json', 'w') as file:
     
