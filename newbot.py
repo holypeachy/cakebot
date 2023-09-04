@@ -261,8 +261,12 @@ def event_methods():
                 print(f'Member {temp_member.global_name} is not in any of the servers')
                 await message.author.send('Sorry but you are not a member of the servers I know')
                 return
-            
-        
+                
+
+        # Message log
+        #if not is_DM(message.channel):
+        print(f"\n\"{message.author.global_name}\" / \"{message.author}\" said: \"{str(message.content)}\" in \"{message.channel}\" server: \"{message.guild}\"")
+
         # Random Messages to some people
         idsValues = idsDict.values()
         random_int = random.randint(1,100)
@@ -273,11 +277,6 @@ def event_methods():
                     await message.channel.send(f'Kena is the Kueen!')
                 else:
                     await message.channel.send(f'Shut up {message.author.global_name}')
-                
-
-        # Message log
-        #if not is_DM(message.channel):
-        print(f"\n\"{message.author.global_name}\" / \"{message.author}\" said: \"{str(message.content)}\" in \"{message.channel}\" server: \"{message.guild}\"")
 
         # * This actually processes the commands since we overrode on_message()
         await bot.process_commands(message)
@@ -1016,6 +1015,7 @@ def load_messages():
         file.close()
 
 
+# Role Commands
 async def is_role_select_setup(guild_id : int):
     if not (serverDict[guild_id].role_select_messages == [] or serverDict[guild_id].role_select_channel == 0):
         channel = bot.get_channel(serverDict[guild_id].role_select_channel)
@@ -1137,9 +1137,5 @@ class Server:
 # TODO: 
 
 # * Commit:
-# - Added pstar and lewd commands.
-# - Removed handle_dm method
-# - Fixed 20 then 19 roles in role_select. Thanks Krayon, you are a genius.
-# - Added cat command
-# - Updated help command
+# - Random message logs now happen after the normal message log
 # - 
