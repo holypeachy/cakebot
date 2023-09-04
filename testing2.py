@@ -7,8 +7,9 @@ pstar_headers = {
 	"X-RapidAPI-Key": f"{RAPIAPI_KEY}",
 	"X-RapidAPI-Host": "papi-pornstarsapi.p.rapidapi.com"
 }
+querystring = {"name":f"Riku Minato"}
 
-response = requests.get(pstar_url, headers=pstar_headers)
+response = requests.get(pstar_url, headers=pstar_headers, params=querystring)
 
 with open('test.json', 'w') as file:
     

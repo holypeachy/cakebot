@@ -789,6 +789,10 @@ def lewd_commands():
             if 'message' in response_check:
                 await context.author.send('Sorry, but this service is temporarily down! 😔')
                 return
+            if response_check['count'] == 0:
+                await context.author.send(f'No results for \"{arg}\"')
+                return
+
             json_response = response.json()['results'][0]
             
             message = f"Age: {json_response['age']}\nDoB: {json_response['date_of_birth']}\nNationality: {json_response['nationality']}\nEthnicity: {json_response['ethnicity']}\nHeight: {json_response['height']}\nCup Size: {json_response['cup_size']}\n"
@@ -800,7 +804,7 @@ def lewd_commands():
     @pstar_info.error
     async def pstar_info_error(context: commands.Context, error):
         if is_DM(context.channel):
-            await context.author.send('The command is:\n!pstar Sasha Grey')
+            await context.author.send(f'The command is:\n{COMMAND_PREFIX}pstar Sasha Grey')
 
 
     @bot.command(name='lewd')
@@ -1137,5 +1141,5 @@ class Server:
 # TODO: 
 
 # * Commit:
-# - Random message logs now happen after the normal message log
-# - 
+# - In pstar command, if no results are found the bot will respond with a message saying so.
+# -
