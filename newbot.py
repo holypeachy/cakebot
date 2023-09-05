@@ -870,15 +870,20 @@ def lewd_commands():
                         embededMessage.set_footer(text=f'{current_link_index + 1}/{len(pic_list)}\ntype \'n\' for next or \'s\' for stop. If you don\'t pick an answer this conversation will timeout in 120s')
                         previous_message = await context.author.send(embed=embededMessage)
                     elif answer.content.lower() == 's':
+                        await previous_message.delete()
                         await context.author.send('You have selected \'s\', this interaction will now stop')
                         current_lewd_users.remove(context.author.id)
                         break
                 except Exception as e:
                     if isinstance(e, TimeoutError):
+                        await previous_message.delete()
                         await context.author.send('⚠️ Timeout, I will assume you do not want to continue this interaction')
                         current_lewd_users.remove(context.author.id)
                         break
                     else:
+                        current_lewd_users.remove(context.author.id)
+                        await previous_message.delete()
+                        await context.author.send('Uknown error, please report to the devs')
                         print('Error in lewd command' + e.__str__())
 
     @lewd.error
@@ -1141,5 +1146,5 @@ class Server:
 # TODO: 
 
 # * Commit:
-# - In pstar command, if no results are found the bot will respond with a message saying so.
+# - lewd command now deletes the message when you are done viewing.
 # - 
