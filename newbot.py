@@ -289,32 +289,32 @@ def event_methods():
     @bot.event
     async def on_raw_reaction_add(payload : discord.RawReactionActionEvent):
         channel = bot.get_channel(payload.channel_id)
+        if not is_DM(channel):
+            # Is channel None? AND is the message the same as the stored one AND is the the user not the bot 
+            if channel and payload.message_id in serverDict[payload.guild_id].role_select_messages and payload.user_id != bot.user.id:
+                message_index = serverDict[payload.guild_id].role_select_messages.index(payload.message_id)
+                roleDict = serverDict[payload.guild_id].role_select_dicts[message_index]
+                if payload.emoji.__str__() in roleDict.keys():
+                    guild = bot.get_guild(payload.guild_id)
+                    role_to_add = guild.get_role(roleDict[payload.emoji.__str__()])
 
-        # Is channel None? AND is the message the same as the stored one AND is the the user not the bot 
-        if channel and payload.message_id in serverDict[payload.guild_id].role_select_messages and payload.user_id != bot.user.id:
-            message_index = serverDict[payload.guild_id].role_select_messages.index(payload.message_id)
-            roleDict = serverDict[payload.guild_id].role_select_dicts[message_index]
-            if payload.emoji.__str__() in roleDict.keys():
-                guild = bot.get_guild(payload.guild_id)
-                role_to_add = guild.get_role(roleDict[payload.emoji.__str__()])
-
-                await guild.get_member(payload.user_id).add_roles(role_to_add)
+                    await guild.get_member(payload.user_id).add_roles(role_to_add)
     
     
     @bot.event
     async def on_raw_reaction_remove(payload : discord.RawReactionActionEvent):
         channel = bot.get_channel(payload.channel_id)
-
-        # Is channel None? AND is the message the same as the stored one AND is the the user not the bot 
-        if channel and payload.message_id in serverDict[payload.guild_id].role_select_messages and payload.user_id != bot.user.id:
-            message_index = serverDict[payload.guild_id].role_select_messages.index(payload.message_id)
-            roleDict = serverDict[payload.guild_id].role_select_dicts[message_index]
-            if payload.emoji.__str__() in roleDict.keys():
-                guild = bot.get_guild(payload.guild_id)
-                role_to_remove = guild.get_role(roleDict[payload.emoji.__str__()])
-                
-                if not role_to_remove.name.lower() == 'minor':
-                    await guild.get_member(payload.user_id).remove_roles(role_to_remove)
+        if not is_DM(channel):
+            # Is channel None? AND is the message the same as the stored one AND is the the user not the bot 
+            if channel and payload.message_id in serverDict[payload.guild_id].role_select_messages and payload.user_id != bot.user.id:
+                message_index = serverDict[payload.guild_id].role_select_messages.index(payload.message_id)
+                roleDict = serverDict[payload.guild_id].role_select_dicts[message_index]
+                if payload.emoji.__str__() in roleDict.keys():
+                    guild = bot.get_guild(payload.guild_id)
+                    role_to_remove = guild.get_role(roleDict[payload.emoji.__str__()])
+                    
+                    if not role_to_remove.name.lower() == 'minor':
+                        await guild.get_member(payload.user_id).remove_roles(role_to_remove)
 
 
 def dev_command_methods():
@@ -1146,5 +1146,5 @@ class Server:
 # TODO: 
 
 # * Commit:
-# - lewd command now deletes the message when you are done viewing.
+# - Fixed error when reacting on the bots DMs
 # - 
