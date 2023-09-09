@@ -144,6 +144,12 @@ def event_methods():
                 original_message = await channel.fetch_message(message_id)
                 await original_message.delete()
 
+            # Check if excluded roles still exist, if it doesn't we remove it from excluded list
+            for role_id in serverDict[entry.guild.id].role_select_excluded:
+                if any(role.id == role_id for role in entry.guild.roles) == False:
+                    serverDict[entry.guild.id].role_select_excluded.remove(role_id)
+
+            save_servers()
             # We resend the role_select message and we delete original
             await role_select_function(channel, entry.guild, entry.guild.owner)
 
@@ -584,7 +590,7 @@ def command_methods():
             roles_message = ''
             for r in context.guild.roles:
                 roles_message += '' if r.name == '@everyone' else f'- {r.name}\n'
-            
+
             if len(serverDict[context.guild.id].role_select_excluded) != 0:
                 roles_message += '\n Roles you cannot select and which must be given by staff are:\n'
                 for role_id in serverDict[context.guild.id].role_select_excluded:
@@ -626,6 +632,7 @@ def command_methods():
                     for role_id in serverDict[context.guild.id].role_select_excluded:
                         message += f'- {context.guild.get_role(role_id).name}\n'
 
+                    message += f'\n⚠️ Remember to redo {COMMAND_PREFIX}role_select if it\'s in the server already, to make sure no one can select this role'
                     embededMessage = discord.Embed(title=f"🫧  Roles to Exclude from \"Role Select\"", description=message, color=0x9dc8d1)
                     embededMessage.set_footer(text='Changes have been saved')
                     embededMessage.set_thumbnail(url=context.guild.icon.url)
@@ -634,7 +641,7 @@ def command_methods():
                     await context.channel.send(embed=embededMessage)
             else:
                 await context.channel.send(f'Sorry, only an admin can do that ☹️')
-           
+
 
     @bot.command(name='reset_role_exclude')
     async def reset_role_exclude(context: commands.Context):
@@ -1072,7 +1079,10 @@ async def role_select_function(a_channel: discord.TextChannel, a_guild: discord.
 
                     role_dicts_index += 1
                     emoji_index = 0
-
+            
+            for d in role_dicts:
+                if len(d) == 0:
+                    role_dicts.remove(d)
             
             serverDict[a_guild.id].role_select_dicts = role_dicts # We store
 
@@ -1146,5 +1156,5 @@ class Server:
 # TODO: 
 
 # * Commit:
-# - Fixed error when reacting on the bots DMs
+# - Added a check to see if excluded roles were deleted when roles change. If any has been it gets removed from the excluded list.
 # - 
