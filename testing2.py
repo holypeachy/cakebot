@@ -26,7 +26,7 @@ url = "https://cheapshark-game-deals.p.rapidapi.com/deals"
 querystring = {"storeID[0]":"1","metacritic":"0","onSale":"true","pageNumber":"0","upperPrice":"50","exact":"0","pageSize":"1","sortBy":"Deal Rating","steamworks":"0","output":"json","desc":"0","steamRating":"0","lowerPrice":"0"}
 
 headers = {
-	"X-RapidAPI-Key": "0bc70c4f9cmsh23abfc8eeed6e1cp10e1d3jsn20a185f53455",
+	"X-RapidAPI-Key": f"{RAPIAPI_KEY}",
 	"X-RapidAPI-Host": "cheapshark-game-deals.p.rapidapi.com"
 }
 
