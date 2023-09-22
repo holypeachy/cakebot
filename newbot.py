@@ -44,14 +44,14 @@ chuck_headers = {
 	"X-RapidAPI-Host": "matchilling-chuck-norris-jokes-v1.p.rapidapi.com"
 }
 
-# Weather
+# Weather API
 weather_url = "https://weatherapi-com.p.rapidapi.com/current.json"
 weather_headers = {
 	"X-RapidAPI-Key": f"{RAPIAPI_KEY}",
 	"X-RapidAPI-Host": "weatherapi-com.p.rapidapi.com"
 }
 
-# Cats
+# Cats API
 cats_url = "https://cat14.p.rapidapi.com/v1/images/search"
 cats_headers = {
 	"X-RapidAPI-Key": f"{RAPIAPI_KEY}",
@@ -73,6 +73,14 @@ lewd_headers = {
 }
 current_lewd_users = []
 
+# CheapShark API
+discount_url = "https://cheapshark-game-deals.p.rapidapi.com/deals"
+discount_headers = {
+	"X-RapidAPI-Key": f"{RAPIAPI_KEY}",
+	"X-RapidAPI-Host": "cheapshark-game-deals.p.rapidapi.com"
+}
+DEALS_AMOUNT = 10
+
 
 def start_bot():
     # Intents
@@ -85,7 +93,6 @@ def start_bot():
     # Setting up the bot's client
     global bot
     bot = commands.Bot(COMMAND_PREFIX, intents=my_intents, help_command=None)
-
 
     # Loads the stored server data from the json file
     load_servers()
@@ -730,6 +737,17 @@ def command_methods():
             await context.channel.send(embed=embededMessage)
 
 
+    @bot.command(name='discounts')
+    async def discounts(context: commands.Context):
+        if not is_DM(context.channel):
+            if can_manage_channels(context.author):
+                serverDict[context.guild.id].discount_promote_channel_id = context.channel.id
+                save_servers()
+                await send_discount_message(context.guild)
+            else:
+                await context.channel.send('Sorry only an admin can do that 😔')
+
+
 def slash_commands_methods():
     @bot.tree.command(name='confess', description='Tell a secret while remaining anonymous')
     @app_commands.guild_only()
@@ -1133,6 +1151,8 @@ class Server:
         self.role_select_channel = 0
         self.role_select_excluded = []
         self.role_select_dicts = []
+
+        self.discount_promote_channel_id = 0
     
     def __str__(self) -> str:
         return f'id: {self.id}  welcome_channel_id: {self.welcome_channel_id}  audit_channel_id: {self.audit_channel_id}  confessions_channel_id: {self.confessions_channel_id}  confessions_allowed: {self.confessions_allowed}  audit_enabled: {self.audit_enabled}  welcome_enabled: {self.welcome_enabled}'
@@ -1153,10 +1173,48 @@ class Server:
         self.role_select_excluded = dictionary['role_select_excluded']
         self.role_select_dicts = dictionary['role_select_dicts']
 
+        self.discount_promote_channel_id = dictionary['discount_promote_channel_id']
 
-# TODO: Implement CheapSharkAPI
+
+async def start_offer_timer():
+    pass
+
+
+async def send_discount_message(guild: discord.Guild):
+    channel = guild.get_channel(serverDict[guild.id].discount_promote_channel_id)
+    if channel:
+        steam_link = 'http://store.steampowered.com/app/'
+        cheapshark_link = 'https://www.cheapshark.com/redirect?dealID='
+        querystring = {"storeID[0]":"1","metacritic":"0","onSale":"true","pageNumber":"0","upperPrice":"50","exact":"0","pageSize":f"{DEALS_AMOUNT}","sortBy":"Deal Rating","steamworks":"0","output":"json","desc":"0","steamRating":"0","lowerPrice":"0"}
+        response = requests.get(url=discount_url, headers=discount_headers, params=querystring)
+        json_response = response.json()
+
+        message = 'Hi guys!! 😊 - Here are 10 great deals on steam!\n'
+        for game in json_response:
+            message += f"### {game['title']}\n💸 - Price: ${game['salePrice']}  |  ~~{game['normalPrice']}~~  \n⭐ - Steam Rating: {game['steamRatingPercent']}% ({game['steamRatingCount']})\n💦 - Deal Rating: {game['dealRating']}\n🍰  [Steam Link]({cheapshark_link+game['dealID']})  🍰\n\n"
+
+        embededMessage = discord.Embed(title=f"🫧  Discounts!", description=message, color=0x9dc8d1)
+        embededMessage.set_author(name=f'Let\'s Play Games!', icon_url=guild.icon.url)
+        embededMessage.set_footer(text='Powered by CheapShark\nNote from dev: CheapShark is great guys, use the links above to support them!\nThe links take you to Steam NOT their website')
+        await channel.send(embed=embededMessage)
+
+    else:
+        print(f'send_discount_message: channel does not exist, it should always exist here')
+
+
+async def send_all_discounts():
+    for server in serverDict.values():
+        if server.discount_promote_channel_id != 0:
+            guild = bot.get_guild(server.id)
+            channel = guild.get_channel(server.discount_promote_channel_id)
+            if channel:
+                await send_discount_message(guild)
+
+
+# TODO: Add weekly functionality to offers
 # TODO in the future: Split code into different files 
 
 # * Commit:
-# - Reduced the chances of Kena getting a random message from 5% to 3%
-# - Started testing CheapSharkAPI
+# - Added send_discount_message method to retrieve API data and to send it as a message
+# - Added send_all_discounts method that sends the message to all registered guilds
+# - Added discount_promote_channel_id property to Server class; the id of the channel gets updated whenever the discounts command is called.
