@@ -280,7 +280,8 @@ def event_methods():
             print(f'{message.author.global_name} rolled a {random_int}!')
             if not is_DM(message.channel) and ( 1 <= random_int <= 5):
                 if message.author.id == idsDict['kena']:
-                    await message.channel.send(f'Kena is the Kueen!')
+                    if 1 <= random_int <= 3:
+                        await message.channel.send(f'Kena is the Kueen!')
                 else:
                     await message.channel.send(f'Shut up {message.author.global_name}')
 
@@ -1153,8 +1154,9 @@ class Server:
         self.role_select_dicts = dictionary['role_select_dicts']
 
 
-# TODO: 
+# TODO: Implement CheapSharkAPI
+# TODO in the future: Split code into different files 
 
 # * Commit:
-# - Added a check to see if excluded roles were deleted when roles change. If any has been it gets removed from the excluded list.
-# - 
+# - Reduced the chances of Kena getting a random message from 5% to 3%
+# - Started testing CheapSharkAPI
