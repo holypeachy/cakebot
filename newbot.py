@@ -80,7 +80,7 @@ discount_headers = {
 	"X-RapidAPI-Key": f"{RAPIAPI_KEY}",
 	"X-RapidAPI-Host": "cheapshark-game-deals.p.rapidapi.com"
 }
-DEALS_DAY_OF_WEEK = 2
+DEALS_DAY_OF_WEEK = 5
 DEALS_AMOUNT = 10
 
 
@@ -1188,43 +1188,43 @@ async def role_select_function(a_channel: discord.TextChannel, a_guild: discord.
 # ! Discount Methods -----------------------------------------------------------------------------------------------
 def start_offer_timer():
     # Testing
-    asyncio.ensure_future(send_all_discounts(), loop=bot.loop)
-
-    # current_date=datetime.datetime.today()
-    # current_weekday = current_date.weekday()
-
-    # if current_weekday > DEALS_DAY_OF_WEEK:
-    #     days_until = 6 - (current_weekday - DEALS_DAY_OF_WEEK - 1) 
-    # elif current_weekday == DEALS_DAY_OF_WEEK:
-    #     days_until = 0
-    # elif current_weekday < DEALS_DAY_OF_WEEK:
-    #     days_until = DEALS_DAY_OF_WEEK - current_weekday
-
-    # if days_until == 0 and current_date.hour > 10:
-    #     days_until += 7
-    # elif days_until == 0 and current_date.hour == 10 and (current_date.min > 0 or current_date.second > 0):
-    #     days_until += 7
-
-    # target_date = current_date + datetime.timedelta(days=days_until)
-    # target_date = target_date.replace(hour=10, minute=0, second=0, microsecond=0)
-    # seconds_to_wait = (target_date - current_date).total_seconds()
-
-    # print(f"Offers | Target date: {target_date}")
-    # print(f"Offers | Seconds to date: {seconds_to_wait}")
-
-    # time.sleep(seconds_to_wait)
     # asyncio.ensure_future(send_all_discounts(), loop=bot.loop)
 
-    # # Run every 7 days
-    # while True:
-    #     current_date=datetime.datetime.today()
-    #     target_date = current_date + datetime.timedelta(days=7)
-    #     target_date = target_date.replace(hour=10, minute=0, second=0, microsecond=0)
-    #     seconds_to_wait = (target_date - current_date).total_seconds()
-    #     print(f"Offers | Target date: {target_date}")
-    #     print(f"Offers | Seconds to date: {seconds_to_wait}")
-    #     time.sleep(seconds_to_wait)
-    #     asyncio.ensure_future(send_all_discounts(), loop=bot.loop)
+    current_date=datetime.datetime.today()
+    current_weekday = current_date.weekday()
+
+    if current_weekday > DEALS_DAY_OF_WEEK:
+        days_until = 6 - (current_weekday - DEALS_DAY_OF_WEEK - 1) 
+    elif current_weekday == DEALS_DAY_OF_WEEK:
+        days_until = 0
+    elif current_weekday < DEALS_DAY_OF_WEEK:
+        days_until = DEALS_DAY_OF_WEEK - current_weekday
+
+    if days_until == 0 and current_date.hour > 10:
+        days_until += 7
+    elif days_until == 0 and current_date.hour == 10 and (current_date.min > 0 or current_date.second > 0):
+        days_until += 7
+
+    target_date = current_date + datetime.timedelta(days=days_until)
+    target_date = target_date.replace(hour=10, minute=0, second=0, microsecond=0)
+    seconds_to_wait = (target_date - current_date).total_seconds()
+
+    print(f"Offers | Target date: {target_date}")
+    print(f"Offers | Seconds to date: {seconds_to_wait}")
+
+    time.sleep(seconds_to_wait)
+    asyncio.ensure_future(send_all_discounts(), loop=bot.loop)
+
+    # Run every 7 days
+    while True:
+        current_date=datetime.datetime.today()
+        target_date = current_date + datetime.timedelta(days=7)
+        target_date = target_date.replace(hour=10, minute=0, second=0, microsecond=0)
+        seconds_to_wait = (target_date - current_date).total_seconds()
+        print(f"Offers | Target date: {target_date}")
+        print(f"Offers | Seconds to date: {seconds_to_wait}")
+        time.sleep(seconds_to_wait)
+        asyncio.ensure_future(send_all_discounts(), loop=bot.loop)
 
 
 async def send_discount_message(guild: discord.Guild):
