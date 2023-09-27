@@ -21,6 +21,7 @@ import pytz
 import random
 import json
 import requests
+import threading, asyncio, datetime, time
 
 
 # Global vars
@@ -79,6 +80,7 @@ discount_headers = {
 	"X-RapidAPI-Key": f"{RAPIAPI_KEY}",
 	"X-RapidAPI-Host": "cheapshark-game-deals.p.rapidapi.com"
 }
+DEALS_DAY_OF_WEEK = 1
 DEALS_AMOUNT = 10
 
 
@@ -129,6 +131,9 @@ def event_methods():
         
         # We set the bot's status
         await bot.change_presence( status=discord.Status.online, activity=discord.Game('games! 🍰') )
+
+        offer_timer_thread = threading.Thread(target=start_offer_timer, daemon=True)
+        offer_timer_thread.start()
 
         print(f'{bot.user} is now running!')
 
@@ -1176,8 +1181,40 @@ class Server:
         self.discount_promote_channel_id = dictionary['discount_promote_channel_id']
 
 
-async def start_offer_timer():
-    pass
+def start_offer_timer():
+    current_date=datetime.datetime.today()
+    weekday = current_date.weekday()
+
+    if weekday > DEALS_DAY_OF_WEEK:
+        days_until = 6 - (weekday - DEALS_DAY_OF_WEEK - 1) 
+    elif weekday == DEALS_DAY_OF_WEEK:
+        days_until = 0
+    elif weekday < DEALS_DAY_OF_WEEK:
+        days_until = DEALS_DAY_OF_WEEK - weekday
+
+    if days_until == 0 and current_date.hour > 10:
+        days_until += 7
+
+    target_date = current_date + datetime.timedelta(days=days_until)
+    target_date = target_date.replace(hour=10, minute=0, second=0, microsecond=0)
+    seconds_to_wait = (target_date - current_date).seconds
+
+    print(f"Offers | Target date: {target_date}")
+    print(f"Offers | Seconds to date: {seconds_to_wait}")
+
+    time.sleep(seconds_to_wait)
+    asyncio.ensure_future(send_all_discounts(), loop=bot.loop)
+
+    # Run every 7 days
+    while True:
+        current_date=datetime.datetime.today()
+        target_date = current_date + datetime.timedelta(days=7)
+        target_date = target_date.replace(hour=10, minute=0, second=0, microsecond=0)
+        seconds_to_wait = (target_date - current_date).seconds
+        print(f"Offers | Target date: {target_date}")
+        print(f"Offers | Seconds to date: {seconds_to_wait}")
+        time.sleep(seconds_to_wait)
+        asyncio.ensure_future(send_all_discounts(), loop=bot.loop)
 
 
 async def send_discount_message(guild: discord.Guild):
@@ -1211,10 +1248,9 @@ async def send_all_discounts():
                 await send_discount_message(guild)
 
 
-# TODO: Add weekly functionality to offers
-# TODO in the future: Split code into different files 
+# TODO: Add option for servers to opt out of offers
+# TODO in the future: Split code into different files
 
 # * Commit:
-# - Added send_discount_message method to retrieve API data and to send it as a message
-# - Added send_all_discounts method that sends the message to all registered guilds
-# - Added discount_promote_channel_id property to Server class; the id of the channel gets updated whenever the discounts command is called.
+# - The bot now sends offer messages every Saturday at 10am to all registered servers that have used the discounts command. The "timer" used for this functionality is multithreaded.
+# - 
