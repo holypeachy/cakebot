@@ -80,7 +80,7 @@ discount_headers = {
 	"X-RapidAPI-Key": f"{RAPIAPI_KEY}",
 	"X-RapidAPI-Host": "cheapshark-game-deals.p.rapidapi.com"
 }
-DEALS_DAY_OF_WEEK = 1
+DEALS_DAY_OF_WEEK = 5
 DEALS_AMOUNT = 10
 
 
@@ -1249,6 +1249,7 @@ async def send_all_discounts():
 
 
 # TODO: Add option for servers to opt out of offers
+# TODO: Add the ability to get more pages of discounts or maybe a less or higher number of offers
 # TODO in the future: Split code into different files
 
 # * Commit:
