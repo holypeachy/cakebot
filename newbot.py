@@ -80,7 +80,7 @@ discount_headers = {
 	"X-RapidAPI-Key": f"{RAPIAPI_KEY}",
 	"X-RapidAPI-Host": "cheapshark-game-deals.p.rapidapi.com"
 }
-DEALS_DAY_OF_WEEK = 5
+DEALS_DAY_OF_WEEK = 2
 DEALS_AMOUNT = 10
 
 
@@ -536,7 +536,22 @@ def command_methods():
     @bot.command(name='help')
     async def help(context: commands.Context):
         if not is_DM(context.channel):
-            await context.send(f'>>> 🍰 Hi! My current commands are:\n**{COMMAND_PREFIX}repeat** I will repeat anything you say\n**{COMMAND_PREFIX}standoff** Want to do a cowboy stand off against a friend? 🤠\n**/confess** in the confessions channel to send an anonymous confessions\n**{COMMAND_PREFIX}chuck** Wanna know some cool, Chuck Norris facts?\n**{COMMAND_PREFIX}weather** Allows you to see the current weather conditions of a location of your choosing\n**{COMMAND_PREFIX}cat** Wanna see a cute cat picture?\n\n**{COMMAND_PREFIX}roles** Shows all the roles in the server\n\n🔞 Adult Commands (DM Only):\n**{COMMAND_PREFIX}pstar** Wanna see some \"stats\" on your favorite star?\n**{COMMAND_PREFIX}lewd** Want some tasty pics from your favorite categories? 😋\n\n**For Admins**\n**{COMMAND_PREFIX}embed** Allows you to create an embeded message\n**/poll** Allows you to create polls\n**{COMMAND_PREFIX}role_select** Sends the message to allow people to select roles\n**{COMMAND_PREFIX}role_exclude** Allows you to exclude roles from Role Select\n**{COMMAND_PREFIX}reset_role_exclude** Resets the list of excluded roles\n**{COMMAND_PREFIX}purge** Will delete x number of messages from the current channel\n**{COMMAND_PREFIX}set_welcome** Sets the Welcome channel\n**{COMMAND_PREFIX}set_audit** Sets the AuditLog channel \n**{COMMAND_PREFIX}set_confessions** Sets the Confessions channel\n**{COMMAND_PREFIX}enable_confessions** Enable of disable confessions for this server\n**{COMMAND_PREFIX}enable_audit** Enable of disable Audit Logs in this server\n\nIf you need help with individual commands type the command!')
+            message = ''
+            message += f'>>> 🍰 Hi! My current commands are:\n**{COMMAND_PREFIX}repeat** I will repeat anything you say\n**{COMMAND_PREFIX}standoff** Want to do a cowboy stand off against a friend? 🤠\n'
+            message += f'**/confess** in the confessions channel to send an anonymous confessions\n**{COMMAND_PREFIX}chuck** Wanna know some cool, Chuck Norris facts?\n**{COMMAND_PREFIX}weather** '
+            message += f'Allows you to see the current weather conditions of a location of your choosing\n**{COMMAND_PREFIX}cat** Wanna see a cute cat picture?\n\n**{COMMAND_PREFIX}roles** '
+            message += f'Shows all the roles in the server\n\n🔞 Adult Commands (DM Only):\n**{COMMAND_PREFIX}pstar** Wanna see some \"stats\" on your favorite star?\n**{COMMAND_PREFIX}lewd** '
+            message += f'Want some tasty pics from your favorite categories? 😋'
+            if can_manage_channels(context.author):
+                message += f'\n\n**💝 For Admins**\n**{COMMAND_PREFIX}embed** Allows you to create an embeded message\n**/poll** Allows you to create polls\n**{COMMAND_PREFIX}purge** Will delete x number of messages from the current channel\n\n**{COMMAND_PREFIX}'
+                message += f'role_select** Sends the message to allow people to select roles\n**{COMMAND_PREFIX}role_exclude** Allows you to exclude roles from Role Select\n**{COMMAND_PREFIX}reset_role_exclude**'
+                message += f' Resets the list of excluded roles\n\n**{COMMAND_PREFIX}set_welcome** Sets the Welcome channel\n**{COMMAND_PREFIX}'
+                message += f'set_audit** Sets the AuditLog channel \n**{COMMAND_PREFIX}set_confessions** Sets the Confessions channel\n**{COMMAND_PREFIX}enable_confessions** Enable of disable confessions for this server\n**'
+                message += f'{COMMAND_PREFIX}enable_audit** Enable of disable Audit Logs in this server\n**{COMMAND_PREFIX}enable_welcome** Enable of disable welcome messages in this server\n\n**{COMMAND_PREFIX}set_discounts** Will send a message with current offers and will set the channel for future weekly offer messages\n'
+                message += f'**{COMMAND_PREFIX}enable_discounts** Allows you to enable or disable weekly Steam offer messages for your server'
+
+            message += f'\n\n⚠️ If you need help with individual commands type that command!'
+            await context.send(message)
 
         
     # ! Usage: !purge [limit] | Depricated-ish
@@ -743,12 +758,44 @@ def command_methods():
 
 
     @bot.command(name='discounts')
-    async def discounts(context: commands.Context):
+    async def discounts(context: commands.Context, arg):
+        if not is_DM(context.channel):
+            pass
+            # await context.channel.send('Discounts command executed')
+
+
+    @bot.command(name='set_discounts')
+    async def set_discounts(context: commands.Context):
         if not is_DM(context.channel):
             if can_manage_channels(context.author):
                 serverDict[context.guild.id].discount_promote_channel_id = context.channel.id
                 save_servers()
                 await send_discount_message(context.guild)
+            else:
+                await context.channel.send('Sorry only an admin can do that 😔')
+
+
+    @bot.command(name='enable_discounts')
+    async def enable_discounts(context: commands.Context, arg):
+        if not is_DM(context.channel):
+            if can_manage_channels(context.author):
+                if serverDict[context.guild.id].discount_promote_channel_id == 0:
+                    await context.send(f'Please set a Promote channel before enabling it! Use the following command to do so:\n**{COMMAND_PREFIX}set_discounts**')
+                elif arg.lower() == 'true' or arg.lower() == 'false':
+                    serverDict[context.guild.id].automated_discounts = True if arg == 'true' else False
+                    state = serverDict[context.guild.id].automated_discounts
+                    save_servers()
+                    await context.channel.send('Automated Steam offer messages are now enabled!' if (state == True) else 'Automated Steam offer messages are now disabled!')
+                else:
+                    await context.send(f'The command is:\n**{COMMAND_PREFIX}enable_discounts true**')
+            else:
+                await context.channel.send('Sorry only an admin can do that 😔')
+    
+    @enable_discounts.error
+    async def enable_discounts_error(context: commands.Context, error):
+        if not is_DM(context.channel):
+            if can_manage_channels(context.author):
+                await context.send(f'The command is:\n**{COMMAND_PREFIX}enable_discounts true**')
             else:
                 await context.channel.send('Sorry only an admin can do that 😔')
 
@@ -923,7 +970,7 @@ def lewd_commands():
             await context.author.send(f'The command is something like:\n{COMMAND_PREFIX}lewd Sasha Grey\nor\n{COMMAND_PREFIX}lewd Ebony')
 
 
-# Other Methods
+# ! Other Methods -----------------------------------------------------------------------------------------------------
 async def handle_message(original_message):
     try:
         response = responses.handle_response(str(original_message.content))
@@ -996,7 +1043,7 @@ def is_permitted_to_purge(member: discord.Member):
     return member.guild_permissions.manage_channels
 
 
-# Server information saving and loading
+# ! Server information saving and loading --------------------------------------------------------------------------
 def save_servers():
     print('Saving server data...')
     with open('servers.json', 'w') as file:
@@ -1055,7 +1102,7 @@ def load_messages():
         file.close()
 
 
-# Role Commands
+# ! Role Commands -------------------------------------------------------------------------------------------------
 async def is_role_select_setup(guild_id : int):
     if not (serverDict[guild_id].role_select_messages == [] or serverDict[guild_id].role_select_channel == 0):
         channel = bot.get_channel(serverDict[guild_id].role_select_channel)
@@ -1138,6 +1185,93 @@ async def role_select_function(a_channel: discord.TextChannel, a_guild: discord.
             save_servers()
 
 
+# ! Discount Methods -----------------------------------------------------------------------------------------------
+def start_offer_timer():
+    # Testing
+    asyncio.ensure_future(send_all_discounts(), loop=bot.loop)
+
+    # current_date=datetime.datetime.today()
+    # current_weekday = current_date.weekday()
+
+    # if current_weekday > DEALS_DAY_OF_WEEK:
+    #     days_until = 6 - (current_weekday - DEALS_DAY_OF_WEEK - 1) 
+    # elif current_weekday == DEALS_DAY_OF_WEEK:
+    #     days_until = 0
+    # elif current_weekday < DEALS_DAY_OF_WEEK:
+    #     days_until = DEALS_DAY_OF_WEEK - current_weekday
+
+    # if days_until == 0 and current_date.hour > 10:
+    #     days_until += 7
+    # elif days_until == 0 and current_date.hour == 10 and (current_date.min > 0 or current_date.second > 0):
+    #     days_until += 7
+
+    # target_date = current_date + datetime.timedelta(days=days_until)
+    # target_date = target_date.replace(hour=10, minute=0, second=0, microsecond=0)
+    # seconds_to_wait = (target_date - current_date).total_seconds()
+
+    # print(f"Offers | Target date: {target_date}")
+    # print(f"Offers | Seconds to date: {seconds_to_wait}")
+
+    # time.sleep(seconds_to_wait)
+    # asyncio.ensure_future(send_all_discounts(), loop=bot.loop)
+
+    # # Run every 7 days
+    # while True:
+    #     current_date=datetime.datetime.today()
+    #     target_date = current_date + datetime.timedelta(days=7)
+    #     target_date = target_date.replace(hour=10, minute=0, second=0, microsecond=0)
+    #     seconds_to_wait = (target_date - current_date).total_seconds()
+    #     print(f"Offers | Target date: {target_date}")
+    #     print(f"Offers | Seconds to date: {seconds_to_wait}")
+    #     time.sleep(seconds_to_wait)
+    #     asyncio.ensure_future(send_all_discounts(), loop=bot.loop)
+
+
+async def send_discount_message(guild: discord.Guild):
+    channel = guild.get_channel(serverDict[guild.id].discount_promote_channel_id)
+    if channel:
+        cheapshark_link = 'https://www.cheapshark.com/redirect?dealID='
+        querystring = {"storeID[0]":"1","metacritic":"0","onSale":"true","pageNumber":"0","upperPrice":"50","exact":"0","pageSize":f"{DEALS_AMOUNT}","sortBy":"Deal Rating","steamworks":"0","output":"json","desc":"0","steamRating":"0","lowerPrice":"0"}
+        response = requests.get(url=discount_url, headers=discount_headers, params=querystring)
+        json_response = response.json()
+
+        message = f'Hi guys!! 😊 - Here are {DEALS_AMOUNT} great deals on steam!\n'
+        for game in json_response:
+            message += f"### {game['title']}\n💸 - Price: ${game['salePrice']}  |  ~~{game['normalPrice']}~~  \n⭐ - Steam Rating: {game['steamRatingPercent']}% ({game['steamRatingCount']})\n💦 - Deal Rating: {game['dealRating']}\n🍰  [Steam Link]({cheapshark_link+game['dealID']})  🍰\n\n"
+
+        embededMessage = discord.Embed(title=f"🫧  Discounts!", description=message, color=0x9dc8d1)
+        embededMessage.set_author(name=f'{guild.name}', icon_url=guild.icon.url)
+        embededMessage.set_footer(text='>>> Powered by CheapShark\nNote from dev: CheapShark is great guys, use the links above to support them!\nThe links take you to Steam NOT their website.')
+        await channel.send(embed=embededMessage)
+
+    else:
+        print(f'send_discount_message: channel does not exist, it should always exist here')
+
+
+async def send_all_discounts():
+    cheapshark_link = 'https://www.cheapshark.com/redirect?dealID='
+    querystring = {"storeID[0]":"1","metacritic":"0","onSale":"true","pageNumber":"0","upperPrice":"50","exact":"0","pageSize":f"{DEALS_AMOUNT}","sortBy":"Deal Rating","steamworks":"0","output":"json","desc":"0","steamRating":"0","lowerPrice":"0"}
+    response = requests.get(url=discount_url, headers=discount_headers, params=querystring)
+    json_response = response.json()
+
+    message = f'Hi guys!! 😊 - Here are {DEALS_AMOUNT} great deals on steam!\n'
+    for game in json_response:
+        message += f"### {game['title']}\n💸 - Price: ${game['salePrice']}  |  ~~{game['normalPrice']}~~  \n⭐ - Steam Rating: {game['steamRatingPercent']}% ({game['steamRatingCount']})\n💦 - Deal Rating: {game['dealRating']}\n🍰  [Steam Link]({cheapshark_link+game['dealID']})  🍰\n\n"
+
+    embededMessage = discord.Embed(title=f"🫧  Discounts!", description=message, color=0x9dc8d1)
+    embededMessage.set_footer(text=f'>>> Powered by CheapShark\nNote from dev: CheapShark is great guys, use the links above to support them!\nThe links take you to Steam NOT their website.\n⚠️ If you would like to stop these automated messages run the command: {COMMAND_PREFIX}enable_discounts false')
+
+    for server in serverDict.values():
+        if server.discount_promote_channel_id != 0 and server.automated_discounts:
+            guild = bot.get_guild(server.id)
+            channel = guild.get_channel(server.discount_promote_channel_id)
+            if channel:
+                embededMessage.set_author(name=f'{guild.name}', icon_url=guild.icon.url)
+                await channel.send(embed=embededMessage)
+            else:
+                print(f'\nsend_all_discounts: guild {guild.name} ({guild.id}) has a set promote channel but it cannot be found')
+
+
 # Classes
 class Server:
     def __init__(self, guild_id):
@@ -1158,9 +1292,10 @@ class Server:
         self.role_select_dicts = []
 
         self.discount_promote_channel_id = 0
+        self.automated_discounts = True
     
     def __str__(self) -> str:
-        return f'id: {self.id}  welcome_channel_id: {self.welcome_channel_id}  audit_channel_id: {self.audit_channel_id}  confessions_channel_id: {self.confessions_channel_id}  confessions_allowed: {self.confessions_allowed}  audit_enabled: {self.audit_enabled}  welcome_enabled: {self.welcome_enabled}'
+        return f'id: {self.id}  welcome_channel_id: {self.welcome_channel_id}  audit_channel_id: {self.audit_channel_id}  confessions_channel_id: {self.confessions_channel_id}  confessions_allowed: {self.confessions_allowed}  audit_enabled: {self.audit_enabled}  welcome_enabled: {self.welcome_enabled}  automated_discounts: {self.automated_discounts}'
 
     def load_data(self, dictionary):
         self.id = dictionary['id']
@@ -1179,79 +1314,18 @@ class Server:
         self.role_select_dicts = dictionary['role_select_dicts']
 
         self.discount_promote_channel_id = dictionary['discount_promote_channel_id']
+        self.automated_discounts = dictionary['automated_discounts']
 
 
-def start_offer_timer():
-    current_date=datetime.datetime.today()
-    weekday = current_date.weekday()
+# TODO: Add normal version of the discount command so non-admins can use it
+# TODO: Add discount commands to help message
 
-    if weekday > DEALS_DAY_OF_WEEK:
-        days_until = 6 - (weekday - DEALS_DAY_OF_WEEK - 1) 
-    elif weekday == DEALS_DAY_OF_WEEK:
-        days_until = 0
-    elif weekday < DEALS_DAY_OF_WEEK:
-        days_until = DEALS_DAY_OF_WEEK - weekday
-
-    if days_until == 0 and current_date.hour > 10:
-        days_until += 7
-
-    target_date = current_date + datetime.timedelta(days=days_until)
-    target_date = target_date.replace(hour=10, minute=0, second=0, microsecond=0)
-    seconds_to_wait = (target_date - current_date).seconds
-
-    print(f"Offers | Target date: {target_date}")
-    print(f"Offers | Seconds to date: {seconds_to_wait}")
-
-    time.sleep(seconds_to_wait)
-    asyncio.ensure_future(send_all_discounts(), loop=bot.loop)
-
-    # Run every 7 days
-    while True:
-        current_date=datetime.datetime.today()
-        target_date = current_date + datetime.timedelta(days=7)
-        target_date = target_date.replace(hour=10, minute=0, second=0, microsecond=0)
-        seconds_to_wait = (target_date - current_date).seconds
-        print(f"Offers | Target date: {target_date}")
-        print(f"Offers | Seconds to date: {seconds_to_wait}")
-        time.sleep(seconds_to_wait)
-        asyncio.ensure_future(send_all_discounts(), loop=bot.loop)
-
-
-async def send_discount_message(guild: discord.Guild):
-    channel = guild.get_channel(serverDict[guild.id].discount_promote_channel_id)
-    if channel:
-        steam_link = 'http://store.steampowered.com/app/'
-        cheapshark_link = 'https://www.cheapshark.com/redirect?dealID='
-        querystring = {"storeID[0]":"1","metacritic":"0","onSale":"true","pageNumber":"0","upperPrice":"50","exact":"0","pageSize":f"{DEALS_AMOUNT}","sortBy":"Deal Rating","steamworks":"0","output":"json","desc":"0","steamRating":"0","lowerPrice":"0"}
-        response = requests.get(url=discount_url, headers=discount_headers, params=querystring)
-        json_response = response.json()
-
-        message = 'Hi guys!! 😊 - Here are 10 great deals on steam!\n'
-        for game in json_response:
-            message += f"### {game['title']}\n💸 - Price: ${game['salePrice']}  |  ~~{game['normalPrice']}~~  \n⭐ - Steam Rating: {game['steamRatingPercent']}% ({game['steamRatingCount']})\n💦 - Deal Rating: {game['dealRating']}\n🍰  [Steam Link]({cheapshark_link+game['dealID']})  🍰\n\n"
-
-        embededMessage = discord.Embed(title=f"🫧  Discounts!", description=message, color=0x9dc8d1)
-        embededMessage.set_author(name=f'Let\'s Play Games!', icon_url=guild.icon.url)
-        embededMessage.set_footer(text='Powered by CheapShark\nNote from dev: CheapShark is great guys, use the links above to support them!\nThe links take you to Steam NOT their website')
-        await channel.send(embed=embededMessage)
-
-    else:
-        print(f'send_discount_message: channel does not exist, it should always exist here')
-
-
-async def send_all_discounts():
-    for server in serverDict.values():
-        if server.discount_promote_channel_id != 0:
-            guild = bot.get_guild(server.id)
-            channel = guild.get_channel(server.discount_promote_channel_id)
-            if channel:
-                await send_discount_message(guild)
-
-
-# TODO: Add option for servers to opt out of offers
-# TODO: Add the ability to get more pages of discounts or maybe a less or higher number of offers
-# TODO in the future: Split code into different files
+# ! TODO in the future: Split code into different files
 
 # * Commit:
-# - The bot now sends offer messages every Saturday at 10am to all registered servers that have used the discounts command. The "timer" used for this functionality is multithreaded.
+# - Fixed (hopefully xD) the issue where it would keep sending the offers messages.
+# - Restructured the send_all_discounts method so it only makes 1 API call, instead of using send_discount_message.
+# - Added option for servers to opt out of automated discount offers.
+# - Renamed discounts command to set_discounts and added enable_discounts command.
+# - Help command now checks if the asking user is an admin or not, to determine which commands to show.
 # - 
