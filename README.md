@@ -1,7 +1,7 @@
 # 🍰 CakeBot
 A friend was starting a discord server and I wanted to make a custom bot for it. I add features based on what my friend wants and things I think would be neat to have.  
 > 🙏 Huge thanks to [Krayon](https://github.com/lcsabi) for contributing from time to time, and for always helping me when I'm stuck with python or some issue I can't solve. I promise I'll learn to use a proper commit naming scheme soon.
-### ⚠️ Warning: This bot has a few NSFW (18+) commands, do not use if you are a minor.  
+### ⚠️ Warning: This bot has a few NSFW (18+) commands, do not use them if you are a minor.  
 
 ## Important Notes:
 - For those who want to fork the code [click here](https://github.com/holypeachy/cakebot#for-reference-here-are-all-the-apis-im-currently-using).
@@ -39,7 +39,7 @@ For information on how some of these features can be modified read through the [
 - Slash command to create polls.
 - Command to delete n number of messages.
 - Role select. The bot sends out a message with all roles users can pick from, and using emojis they can select what roles they want. If any changes are done to the roles, the "role select" messages update automatically.
-- Admins can run a command to get the best 10 steam deals. Running the command will set the bot to automatically send a message with 10 steam deals every Saturday at 10am. This can be disabled running a command.
+- Admins can run a command to get the best 10 steam deals. Running the command will set the bot to automatically send a message with 10 steam deals every Saturday at 10am. This can be disabled running another command.
 - Welcome messages (37 unique messages).
 - Goodbye messages (30 unique messages).
 - Simple audit logs.
@@ -58,9 +58,15 @@ Here is a list of all the commands available as of October 2, 2023. Non-admins w
 ## Notes for anyone who wants to fork the code:
 First I would like to apologize for the current state of this code base, the bot has grown quite a bit (as of writing this: 1300 lines) and I am yet to take steps to organize the code into separate files. Although I think you'll find that it is well organized.
 - The major script is newbot.py not bot.py, the latter is depricated.
+- Make sure to create a servers.json and a config.py. Add the following content to the config.py:
+```
+TOKEN = 'your_token_here' # Discord Bot's token
+COMMAND_PREFIX = '!' # The prefix for the bot's commands
+RAPIAPI_KEY = 'your_api_key_here'
+```
 - We use poetry to handle dependecies (thanks Krayon for letting me know this exists):
   - ```pip install poetry```
-  - And in the project run ```poetry install``` to install all required dependencies
+  - Then, in the project run ```poetry install``` to install all required dependencies.
 - The way I determine if someone is an admin is if they can manage channels.
 - I use RapiAPI for all APIs and all of the ones I use are free. So if you want to use the bot you can go to the [site](https://rapidapi.com/) and subscribe to all the APIs I used here, which you'll see in the beginning of the newbot.py script.
 - The testing scripts contain some code I'm experimenting with. As of writing this, testing.py contains the beginnings of a music playing functionality (the file itself is its own standalone bot). testing2.py is where I test the APIs.
