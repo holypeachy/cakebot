@@ -10,7 +10,7 @@ A friend was starting a discord server and I wanted to make a custom bot for it.
 - Every update that a property is added to the Server class, the bot will break and not start. You'll have to manually add the key and a value to the json file for it to load. I need to fix this soon because it has become quite a nuisance.
 
 ## Features (As of October 2, 2023)
-For information on how some of these features can be modified read through the [commands list](https://github.com/holypeachy/cakebot/main/README.md#commands).
+For information on how some of these features can be modified read through the [commands list](https://github.com/holypeachy/cakebot#commands).
 ### Fun
 - The bot can repeat something you say using command.
 - Random Chuck Norris jokes.
