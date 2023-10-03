@@ -4,7 +4,7 @@ A friend was starting a discord server and I wanted to make a custom bot for it.
 ### ⚠️ Warning: This bot has a few NSFW (18+) commands, do not use if you are a minor.  
 
 ## Important Notes:
-- For those who want to fork the code [click here](https://github.com/holypeachy/cakebot/main/README.md#note-for-anyone-who-wants-to-fork-the-code).
+- For those who want to fork the code [click here](https://github.com/holypeachy/cakebot#for-reference-here-are-all-the-apis-im-currently-using).
 - Keep in mind that this is a work in progress. The main branch is the "production" branch, the code here should be mostly bug free. If there is a bug it will quickly be caught because my bot is always running.  
 - Even though the bot was only intended for 1 Discord server, it is written to support multiple servers.
 - Every update that a property is added to the Server class, the bot will break and not start. You'll have to manually add the key and a value to the json file for it to load. I need to fix this soon because it has become quite a nuisance.
