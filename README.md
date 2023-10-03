@@ -59,7 +59,7 @@ First I would like to apologize for the current state of this code base, the bot
 - The major script is newbot.py not bot.py, the latter is depricated.
 - The way I determine if someone is an admin is if they can manage channels.
 - I use RapiAPI for all APIs and all of the ones I use are free. So if you want to use the bot you can go to the [site](https://rapidapi.com/collection/list-of-free-apis) and subscribe to all the APIs I used here, which you'll see in the beginning of the newbot.py script.
-- The testing scripts contain some code I'm experimenting with. As of writing this, testing.py contains the beginnings of a music playing functionality (the file itself is it's own standalone bot). testing2.py is where I test the APIs.
+- The testing scripts contain some code I'm experimenting with. As of writing this, testing.py contains the beginnings of a music playing functionality (the file itself is its own standalone bot). testing2.py is where I test the APIs.
 
 ### For reference, here are all the APIs I'm currently using
 ![image](https://github.com/holypeachy/cakebot/assets/89674775/1e9c0204-8320-437f-a30f-48b72c486199)
