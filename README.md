@@ -58,7 +58,7 @@ Here is a list of all the commands available as of October 2, 2023. Non-admins w
 First I would like to apologize for the current state of this code base, the bot has grown quite a bit (as of writing this: 1300 lines) and I am yet to take steps to organize the code into separate files. Although I think you'll find that it is well organized.
 - The major script is newbot.py not bot.py, the latter is depricated.
 - The way I determine if someone is an admin is if they can manage channels.
-- I use RapiAPI for all APIs and all of the ones I use are free. So if you want to use the bot you can go to the [site](https://rapidapi.com/collection/list-of-free-apis) and subscribe to all the APIs I used here, which you'll see in the beginning of the newbot.py script.
+- I use RapiAPI for all APIs and all of the ones I use are free. So if you want to use the bot you can go to the [site](https://rapidapi.com/) and subscribe to all the APIs I used here, which you'll see in the beginning of the newbot.py script.
 - The testing scripts contain some code I'm experimenting with. As of writing this, testing.py contains the beginnings of a music playing functionality (the file itself is its own standalone bot). testing2.py is where I test the APIs.
 
 ### For reference, here are all the APIs I'm currently using
