@@ -15,6 +15,7 @@ For information on how some of these features can be modified read through the [
 - The bot can repeat something you say using command.
 - Random Chuck Norris jokes.
 - Random cat image.
+- Cowboy standoff minigame.
 - NSFW Commands (only available when you DM the bot):
   - Look up a adult film star, which will show you an image and some information about them.
   - Look up professional image from a category you type in.
