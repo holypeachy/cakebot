@@ -75,7 +75,9 @@ lewd_headers = {
 current_lewd_users = []
 
 # CheapShark API
+cheapshark_stores = None
 discount_url = "https://cheapshark-game-deals.p.rapidapi.com/deals"
+discount_games_url = "https://cheapshark-game-deals.p.rapidapi.com/games"
 discount_headers = {
 	"X-RapidAPI-Key": f"{RAPIAPI_KEY}",
 	"X-RapidAPI-Host": "cheapshark-game-deals.p.rapidapi.com"
@@ -100,6 +102,8 @@ def start_bot():
     load_servers()
 
     load_messages()
+
+    fetch_cheapshark_stores()
 
 
     # These methods are organizational and contain the events and commands that will be registered async
@@ -135,7 +139,7 @@ def event_methods():
         offer_timer_thread = threading.Thread(target=start_offer_timer, daemon=True)
         offer_timer_thread.start()
 
-        print(f'{bot.user} is now running!')
+        print('\033[92m' + f'{bot.user} is now running!' + '\033[0m')
 
 
     @bot.event
@@ -540,7 +544,7 @@ def command_methods():
             message += f'>>> 🍰 Hi! My current commands are:\n**{COMMAND_PREFIX}repeat** I will repeat anything you say\n**{COMMAND_PREFIX}standoff** Want to do a cowboy stand off against a friend? 🤠\n'
             message += f'**/confess** in the confessions channel to send an anonymous confessions\n**{COMMAND_PREFIX}chuck** Wanna know some cool, Chuck Norris facts?\n**{COMMAND_PREFIX}weather** '
             message += f'Allows you to see the current weather conditions of a location of your choosing\n**{COMMAND_PREFIX}cat** Wanna see a cute cat picture?\n\n**{COMMAND_PREFIX}roles** '
-            message += f'Shows all the roles in the server\n\n🔞 Adult Commands (DM Only):\n**{COMMAND_PREFIX}pstar** Wanna see some \"stats\" on your favorite star?\n**{COMMAND_PREFIX}lewd** '
+            message += f'Shows all the roles in the server\n\n**{COMMAND_PREFIX}discounts** Shows you the **best** discounts on steam, or allows you to search for a **game** in different stores\n\n🔞 Adult Commands (DM Only):\n**{COMMAND_PREFIX}pstar** Wanna see some \"stats\" on your favorite star?\n**{COMMAND_PREFIX}lewd** '
             message += f'Want some tasty pics from your favorite categories? 😋'
             if can_manage_channels(context.author):
                 message += f'\n\n**💝 For Admins**\n**{COMMAND_PREFIX}embed** Allows you to create an embeded message\n**/poll** Allows you to create polls\n**{COMMAND_PREFIX}purge** Will delete x number of messages from the current channel\n\n**{COMMAND_PREFIX}'
@@ -758,10 +762,82 @@ def command_methods():
 
 
     @bot.command(name='discounts')
-    async def discounts(context: commands.Context, arg):
+    async def discounts(context: commands.Context, command: str, argument: str):
         if not is_DM(context.channel):
-            pass
-            # await context.channel.send('Discounts command executed')
+            if command.lower() == 'best':
+                if 11 > int(argument) > 0:
+                    cheapshark_link = 'https://www.cheapshark.com/redirect?dealID='
+                    querystring = {"storeID[0]":"1","metacritic":"0","onSale":"true","pageNumber":"0","upperPrice":"50","exact":"0","pageSize":f"{int(argument)}","sortBy":"Deal Rating","steamworks":"0","output":"json","desc":"0","steamRating":"0","lowerPrice":"0"}
+                    response = requests.get(url=discount_url, headers=discount_headers, params=querystring)
+                    json_response = response.json()
+
+                    if json_response['message']:
+                        await context.channel.send('⚠️ This service is temporarily down, please try again in an hour.')
+                        return
+
+                    message = f'Hey there {context.author.display_name}!! 😊 - Here {"is" if int(argument) == 0 else "are"} {int(argument)} great deals on steam!\n'
+                    for game in json_response:
+                        message += f"### {game['title']}\n💸 - Price: ${game['salePrice']}  |  ~~{game['normalPrice']}~~  \n⭐ - Steam Rating: {game['steamRatingPercent']}% ({game['steamRatingCount']})\n💦 - Deal Rating: {game['dealRating']}\n🍰  [Steam Link]({cheapshark_link+game['dealID']})  🍰\n\n"
+
+                    embededMessage = discord.Embed(title=f"🫧  Best Discounts!", description=message, color=0x9dc8d1)
+                    embededMessage.set_author(name=f'{context.author.display_name}', icon_url=context.author.avatar.url)
+                    embededMessage.set_footer(text='>>> Powered by CheapShark\nNote from dev: CheapShark is great guys, use the links above to support them!\nThe links take you to Steam NOT their website.')
+                    await context.channel.send(embed=embededMessage)
+                else:
+                    await context.channel.send('Please enter a value between 1 and 10!')
+            elif command.lower() == 'game':
+                cheapshark_link = 'https://www.cheapshark.com/redirect?dealID='
+
+                querystring = {"limit":"60","exact":"0","title":f"{argument}"}
+                response = requests.get(url=discount_url, headers=discount_headers, params=querystring)
+                json_response = response.json()
+
+                if json_response['message']:
+                    await context.channel.send('⚠️ This service is temporarily down, please try again in an hour.')
+                    return
+
+                if len(json_response) == 0:
+                    await context.channel.send(f'Game: \"{argument}\" was not found!')
+                else:
+                    game_id = json_response[0]['gameID']
+
+                    querystring = {"id":f"{game_id}"}
+                    response = requests.get(url=discount_games_url, headers=discount_headers, params=querystring)
+                    json_response = response.json()
+                    
+                    game_name = json_response["info"]["title"]
+
+                    message = f'Hey there {context.author.display_name}!! 😊 - Here are the best deals for **{game_name}** right now!\n'
+                    message += f'\n**💸 Cheapest Price Ever: ${json_response["cheapestPriceEver"]["price"]}**\n'
+
+                    at_least_one = False
+                    for deal in json_response['deals']:
+                        storeID = deal['storeID']
+                        store_name = cheapshark_stores[int(storeID) - 1]['storeName']
+                        if cheapshark_stores[int(storeID) - 1]['isActive'] == 0:
+                            continue
+                        
+                        if deal['price'] == deal['retailPrice']:
+                            continue
+                        message += f"### Store: {store_name}\n💸 - Price: ${deal['price']}  |  ~~{deal['retailPrice']}~~\n🍰  [{store_name} Link]({cheapshark_link+deal['dealID']})  🍰\n\n"
+                        at_least_one = True
+
+                    if not at_least_one:
+                        message += f'## Sorry, No discounts for this game were found as of right now 😢'
+                    
+                    embededMessage = discord.Embed(title=f"🫧  {game_name} Discounts!", description=message, color=0x9dc8d1)
+                    embededMessage.set_author(name=f'{context.author.display_name}', icon_url=context.author.avatar.url)
+                    embededMessage.set_footer(text='>>> Powered by CheapShark\n')
+                    embededMessage.set_thumbnail(url=json_response['info']['thumb'])
+                    await context.channel.send(embed=embededMessage)
+            else:
+                await context.channel.send(f'The command goes like:\n**{COMMAND_PREFIX}discounts game \"Assassin\'s Creed\"**\nor\n**{COMMAND_PREFIX}discounts best 5**')
+
+
+    @discounts.error
+    async def discounts_error(context: commands.Context, error):
+        if not is_DM(context.channel):
+            await context.channel.send(f'The command goes like:\n**{COMMAND_PREFIX}discounts game \"Assassin\'s Creed\"**\nor\n**{COMMAND_PREFIX}discounts best 5**')
 
 
     @bot.command(name='set_discounts')
@@ -1102,6 +1178,26 @@ def load_messages():
         file.close()
 
 
+def fetch_cheapshark_stores():
+    global cheapshark_stores
+    url = "https://cheapshark-game-deals.p.rapidapi.com/stores"
+
+    headers = {
+        "X-RapidAPI-Key": f"{RAPIAPI_KEY}",
+        "X-RapidAPI-Host": "cheapshark-game-deals.p.rapidapi.com"
+    }
+
+    response = requests.get(url, headers=headers)
+
+    cheapshark_stores = response.json()
+
+    if cheapshark_stores['message']:
+        print('\033[93m' + 'Warning: CheapShark Store info was NOT fetched' + '\033[0m')
+        print('\033[93m' + 'Warning: We used more than 100 API calls in an hour' + '\033[0m')
+    else:
+        print('CheapShark Store info has been fetched')
+
+
 # ! Role Commands -------------------------------------------------------------------------------------------------
 async def is_role_select_setup(guild_id : int):
     if not (serverDict[guild_id].role_select_messages == [] or serverDict[guild_id].role_select_channel == 0):
@@ -1317,15 +1413,11 @@ class Server:
         self.automated_discounts = dictionary['automated_discounts']
 
 
-# TODO: Add normal version of the discount command so non-admins can use it
-# TODO: Add discount commands to help message
+# TODO: Add suggest command
 
 # ! TODO in the future: Split code into different files
 
 # * Commit:
-# - Fixed (hopefully xD) the issue where it would keep sending the offers messages.
-# - Restructured the send_all_discounts method so it only makes 1 API call, instead of using send_discount_message.
-# - Added option for servers to opt out of automated discount offers.
-# - Renamed discounts command to set_discounts and added enable_discounts command.
-# - Help command now checks if the asking user is an admin or not, to determine which commands to show.
+# - Added discounts command with 2 modes. \"best\" which shows you the best deals on steam right now. And \"game\" which shows you the best deals throughout all the stores.
+# - Added discounts command to help message.
 # - 
