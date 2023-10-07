@@ -994,7 +994,7 @@ def slash_commands_methods():
                 embededMessage.set_author(name=f'{interaction.user.display_name}', icon_url=interaction.user.avatar.url)
                 await channel.send(embed=embededMessage)
 
-                await interaction.response.send_message(f'Suggestion was successfully sent!', ephemeral=True)
+                await interaction.response.send_message(f'Your suggestion was successfully sent!', ephemeral=True)
             else:
                 await interaction.response.send_message(f'Sorry, but suggestions are disabled for this server. Please contact an admin about this.', ephemeral=True)
         else:
