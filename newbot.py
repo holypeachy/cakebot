@@ -550,8 +550,8 @@ def command_methods():
                 message += f'\n\n**💝 For Admins**\n**{COMMAND_PREFIX}embed** Allows you to create an embeded message\n**/poll** Allows you to create polls\n**{COMMAND_PREFIX}purge** Will delete x number of messages from the current channel\n\n**{COMMAND_PREFIX}'
                 message += f'role_select** Sends the message to allow people to select roles\n**{COMMAND_PREFIX}role_exclude** Allows you to exclude roles from Role Select\n**{COMMAND_PREFIX}reset_role_exclude**'
                 message += f' Resets the list of excluded roles\n\n**{COMMAND_PREFIX}set_welcome** Sets the Welcome channel\n**{COMMAND_PREFIX}'
-                message += f'set_audit** Sets the AuditLog channel \n**{COMMAND_PREFIX}set_confessions** Sets the Confessions channel\n**{COMMAND_PREFIX}enable_confessions** Enable of disable confessions for this server\n**'
-                message += f'{COMMAND_PREFIX}enable_audit** Enable of disable Audit Logs in this server\n**{COMMAND_PREFIX}enable_welcome** Enable of disable welcome messages in this server\n\n**{COMMAND_PREFIX}set_discounts** Will send a message with current offers and will set the channel for future weekly offer messages\n'
+                message += f'set_audit** Sets the AuditLog channel\n**{COMMAND_PREFIX}set_confessions** Sets the Confessions channel\n**{COMMAND_PREFIX}set_suggestions** Sets the Suggestions channel\n**{COMMAND_PREFIX}enable_confessions** Enable or disable confessions for this server\n**'
+                message += f'{COMMAND_PREFIX}enable_audit** Enable or disable Audit Logs in this server\n**{COMMAND_PREFIX}enable_welcome** Enable or disable welcome messages in this server\n**{COMMAND_PREFIX}enable_suggestions** Enable or disable suggestions in this server \n\n**{COMMAND_PREFIX}set_discounts** Will send a message with current offers and will set the channel for future weekly offer messages\n'
                 message += f'**{COMMAND_PREFIX}enable_discounts** Allows you to enable or disable weekly Steam offer messages for your server'
 
             message += f'\n\n⚠️ If you need help with individual commands type that command!'
@@ -1535,8 +1535,5 @@ class Server:
 # ! TODO Soon: Split code into different files
 
 # * Commit:
-# - Added suggest slash command to help message. Organized commands a bit.
-# - Changed the __str__ method of the Server class to only display the id of the server.
-# - Changed authorization because I was having some issues with the roles, see readme for OAuth2.
-# - Confessions can now be made from anywhere.
+# - Added admin commands for suggestions to help message.
 # - 
