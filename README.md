@@ -29,9 +29,11 @@ For information on how some of these features can be modified read through the [
 
 ### Cool
 - Get the current weather of anywhere in the world.
-- "Confessions" through a slash command allows users to send an anonymous message in a pre-set channel.
+- "Confessions" through a slash command allows users to send an anonymous message to a pre-set channel.
 - Can see all server roles by running a command.
-- Get the best 10 Steam deals every Saturday
+- Get the best 10 Steam deals every Saturday.
+- Can send admins suggestions on how to improve the server.
+- Get the best current deals on Steam, or search game stores for the best deal on a game of your choosing.
 
 ![2023-10-03_00-46](https://github.com/holypeachy/cakebot/assets/89674775/032476ec-5eb8-433e-924b-b885604122f6)
 
@@ -50,7 +52,8 @@ For information on how some of these features can be modified read through the [
 ## Commands
 Here is a list of all the commands available as of October 2, 2023. Non-admins will not see the admin command when they invoke the help command.
   
-![2023-10-02_23-46](https://github.com/holypeachy/cakebot/assets/89674775/e018555e-a304-419d-a10f-075e25f8bf87)
+![image](https://github.com/holypeachy/cakebot/assets/89674775/78ccca68-a306-415d-96cb-edaea0d33bd8)
+
 
 ## Developer Commands
 - dev_shutdown
