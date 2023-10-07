@@ -541,8 +541,8 @@ def command_methods():
     async def help(context: commands.Context):
         if not is_DM(context.channel):
             message = ''
-            message += f'>>> 🍰 Hi! My current commands are:\n**{COMMAND_PREFIX}repeat** I will repeat anything you say\n**{COMMAND_PREFIX}standoff** Want to do a cowboy stand off against a friend? 🤠\n'
-            message += f'**/confess** in the confessions channel to send an anonymous confessions\n**{COMMAND_PREFIX}chuck** Wanna know some cool, Chuck Norris facts?\n**{COMMAND_PREFIX}weather** '
+            message += f'>>> 🍰 Hi! My current commands are:\n**{COMMAND_PREFIX}repeat** I will repeat anything you say\n**{COMMAND_PREFIX}standoff** Want to do a cowboy stand off against a friend? 🤠\n\n'
+            message += f'**/confess** in the confessions channel to send an anonymous confessions\n**/suggest** Allows you to send a suggestion to admins about the server or CakeBot!\n\n**{COMMAND_PREFIX}chuck** Wanna know some cool, Chuck Norris facts?\n**{COMMAND_PREFIX}weather** '
             message += f'Allows you to see the current weather conditions of a location of your choosing\n**{COMMAND_PREFIX}cat** Wanna see a cute cat picture?\n\n**{COMMAND_PREFIX}roles** '
             message += f'Shows all the roles in the server\n\n**{COMMAND_PREFIX}discounts** Shows you the **best** discounts on steam, or allows you to search for a **game** in different stores\n\n🔞 Adult Commands (DM Only):\n**{COMMAND_PREFIX}pstar** Wanna see some \"stats\" on your favorite star?\n**{COMMAND_PREFIX}lewd** '
             message += f'Want some tasty pics from your favorite categories? 😋'
@@ -856,6 +856,7 @@ def command_methods():
         if not is_DM(context.channel):
             if can_manage_channels(context.author):
                 serverDict[context.guild.id].discount_promote_channel_id = context.channel.id
+                serverDict[context.guild.id].automated_discounts = True
                 save_servers()
                 await send_discount_message(context.guild)
             else:
@@ -934,7 +935,8 @@ def slash_commands_methods():
         else:
             embededConfession = discord.Embed(title="🫧  By Anonymous Member!", description=confession, color=0x9dc8d1)
             await interaction.response.send_message('Your confession has been successfully posted and only you can see this message', ephemeral=True)
-            await interaction.channel.send(embed=embededConfession)
+            confessions_channel = interaction.guild.get_channel(serverDict[interaction.guild.id].confessions_channel_id)
+            await confessions_channel.send(embed=embededConfession)
             await send_confession_audit(interaction.guild, interaction.user, confession)
     
     @confess.error
@@ -945,8 +947,8 @@ def slash_commands_methods():
             await interaction.response.send_message('Sorry, confessions are not allowed on this server, tell an admin to enable them.', ephemeral=True)
         elif bot.get_channel(serverDict[interaction.guild.id].confessions_channel_id) is None:
             await interaction.response.send_message('A Confessions channel is set but it is not found in this server (could\'ve been deleted). Please tell an admin about this problem.', ephemeral=True)
-        elif not serverDict[interaction.guild.id].confessions_channel_id == interaction.channel.id:
-            await interaction.response.send_message('Sorry, please do your confession on the confessions channel.', ephemeral=True)
+        # elif not serverDict[interaction.guild.id].confessions_channel_id == interaction.channel.id:
+        #     await interaction.response.send_message('Sorry, please do your confession on the confessions channel.', ephemeral=True)
         else:
             print(f'/confess: {error}')
             await interaction.response.send_message('Uknown Error, please report to admin or dev.', ephemeral=True)
@@ -980,7 +982,7 @@ def slash_commands_methods():
             await interaction.response.send_message('Uknown Error, please report to admin or dev.', ephemeral=True)
 
 
-    @bot.tree.command(name='suggest', description='Send the admins your suggestions on howto make the server or cakebot better!')
+    @bot.tree.command(name='suggest', description='Send the admins your suggestions on how to make the server or cakebot better!')
     @app_commands.guild_only()
     @app_commands.describe(suggestion = 'What would you like to suggest?')
     async def suggest( interaction: discord.Interaction, suggestion: str):
@@ -988,11 +990,11 @@ def slash_commands_methods():
         channel = interaction.guild.get_channel(channel_id)
         if channel:
             if serverDict[interaction.guild.id].suggest_enabled:
-                embededMessage = discord.Embed(title=f"🫧  Suggestion by {interaction.user.display_name}", description=suggestion, color=0x9dc8d1)
+                embededMessage = discord.Embed(title=f"🫧  Suggestion:", description=suggestion, color=0x9dc8d1)
                 embededMessage.set_author(name=f'{interaction.user.display_name}', icon_url=interaction.user.avatar.url)
                 await channel.send(embed=embededMessage)
 
-                await interaction.response.send_message(f'Suggestion was succesfully sent!', ephemeral=True)
+                await interaction.response.send_message(f'Suggestion was successfully sent!', ephemeral=True)
             else:
                 await interaction.response.send_message(f'Sorry, but suggestions are disabled for this server. Please contact an admin about this.', ephemeral=True)
         else:
@@ -1171,7 +1173,7 @@ def is_DM(channel: discord.channel):
 def can_confess(interaction : discord.Interaction):
     if bot.get_channel(serverDict[interaction.guild.id].confessions_channel_id) is None:
         return False
-    elif serverDict[interaction.guild.id].confessions_allowed and serverDict[interaction.guild.id].confessions_channel_id == interaction.channel.id:
+    elif serverDict[interaction.guild.id].confessions_allowed: # and serverDict[interaction.guild.id].confessions_channel_id == interaction.channel.id:
         return True
     else:
         return False
@@ -1461,7 +1463,7 @@ class Server:
         self.suggest_enabled = False
     
     def __str__(self) -> str:
-        return f'id: {self.id}  welcome_channel_id: {self.welcome_channel_id}  audit_channel_id: {self.audit_channel_id}  confessions_channel_id: {self.confessions_channel_id}  confessions_allowed: {self.confessions_allowed}  audit_enabled: {self.audit_enabled}  welcome_enabled: {self.welcome_enabled}  automated_discounts: {self.automated_discounts}'
+        return f'server id: {self.id}'
 
     def load_data(self, dictionary):
         self.id = dictionary['id']
@@ -1523,18 +1525,18 @@ class Server:
         except:
             self.suggest_target_channel = 0
         try:
-            self.suggest_enabled = dictionary['self.suggest_enabled']
+            self.suggest_enabled = dictionary['suggest_enabled']
         except:
             self.suggest_enabled = False
 
 
 # TODO: Test suggest command further
-# TODO: Add suggestions to help command
 
-# ! TODO in the future: Split code into different files
+# ! TODO Soon: Split code into different files
 
 # * Commit:
-# - Fixed several bugs in the discounts command.
-# - Added suggest slash command.
-# - Fixed issue where bot would fail to load if a key was not found, now when this happens default values are loaded.
+# - Added suggest slash command to help message. Organized commands a bit.
+# - Changed the __str__ method of the Server class to only display the id of the server.
+# - Changed authorization because I was having some issues with the roles, see readme for OAuth2.
+# - Confessions can now be made from anywhere.
 # - 
