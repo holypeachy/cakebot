@@ -10,7 +10,7 @@ A friend was starting a discord server and I wanted to make a custom bot for it.
 - Even though the bot was only intended for 1 Discord server, it is written to support multiple servers.
 - Every update that a property is added to the Server class, the bot will break and not start. You'll have to manually add the key and a value to the json file for it to load. I need to fix this soon because it has become quite a nuisance.
 
-## Features (As of October 2, 2023)
+## Features (As of October 7, 2023)
 For information on how some of these features can be modified read through the [commands list](https://github.com/holypeachy/cakebot#commands).
 ### Fun
 - The bot can repeat something you say using command.
@@ -50,10 +50,9 @@ For information on how some of these features can be modified read through the [
 ![2023-10-03_00-42](https://github.com/holypeachy/cakebot/assets/89674775/f74f7618-6bc3-42fd-a47f-2e5ae7a30426)
 
 ## Commands
-Here is a list of all the commands available as of October 2, 2023. Non-admins will not see the admin command when they invoke the help command.
+Here is a list of all the commands available as of October 7, 2023. Non-admins will not see the admin command when they invoke the help command.
   
-![image](https://github.com/holypeachy/cakebot/assets/89674775/78ccca68-a306-415d-96cb-edaea0d33bd8)
-
+![image](https://github.com/holypeachy/cakebot/assets/89674775/5163da5a-a026-4f8a-a2ab-372a80ae5ac0)
 
 ## Developer Commands
 - dev_shutdown
