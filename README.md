@@ -76,5 +76,7 @@ RAPIAPI_KEY = 'your_api_key_here'
 ![image](https://github.com/holypeachy/cakebot/assets/89674775/1e9c0204-8320-437f-a30f-48b72c486199)
 
 ## OAuth2
+⚠️ Make sure to move the CakeBot role higher in the role list than the miscellaneous roles (age, games, etc.) because role select will not work properly.  
+
 Here are all the permission the bot will need:
 ![image](https://github.com/holypeachy/cakebot/assets/89674775/51d04d44-9486-4428-8efd-ee38a75cadf5)
