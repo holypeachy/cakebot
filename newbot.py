@@ -75,7 +75,9 @@ lewd_headers = {
 current_lewd_users = []
 
 # CheapShark API
+cheapshark_stores = None
 discount_url = "https://cheapshark-game-deals.p.rapidapi.com/deals"
+discount_games_url = "https://cheapshark-game-deals.p.rapidapi.com/games"
 discount_headers = {
 	"X-RapidAPI-Key": f"{RAPIAPI_KEY}",
 	"X-RapidAPI-Host": "cheapshark-game-deals.p.rapidapi.com"
@@ -100,6 +102,8 @@ def start_bot():
     load_servers()
 
     load_messages()
+
+    fetch_cheapshark_stores()
 
 
     # These methods are organizational and contain the events and commands that will be registered async
@@ -135,7 +139,7 @@ def event_methods():
         offer_timer_thread = threading.Thread(target=start_offer_timer, daemon=True)
         offer_timer_thread.start()
 
-        print(f'{bot.user} is now running!')
+        print('\033[92m' + f'{bot.user} is now running!' + '\033[0m')
 
 
     @bot.event
@@ -537,17 +541,17 @@ def command_methods():
     async def help(context: commands.Context):
         if not is_DM(context.channel):
             message = ''
-            message += f'>>> 🍰 Hi! My current commands are:\n**{COMMAND_PREFIX}repeat** I will repeat anything you say\n**{COMMAND_PREFIX}standoff** Want to do a cowboy stand off against a friend? 🤠\n'
-            message += f'**/confess** in the confessions channel to send an anonymous confessions\n**{COMMAND_PREFIX}chuck** Wanna know some cool, Chuck Norris facts?\n**{COMMAND_PREFIX}weather** '
+            message += f'>>> 🍰 Hi! My current commands are:\n**{COMMAND_PREFIX}repeat** I will repeat anything you say\n**{COMMAND_PREFIX}standoff** Want to do a cowboy stand off against a friend? 🤠\n\n'
+            message += f'**/confess** in the confessions channel to send an anonymous confessions\n**/suggest** Allows you to send a suggestion to admins about the server or CakeBot!\n\n**{COMMAND_PREFIX}chuck** Wanna know some cool, Chuck Norris facts?\n**{COMMAND_PREFIX}weather** '
             message += f'Allows you to see the current weather conditions of a location of your choosing\n**{COMMAND_PREFIX}cat** Wanna see a cute cat picture?\n\n**{COMMAND_PREFIX}roles** '
-            message += f'Shows all the roles in the server\n\n🔞 Adult Commands (DM Only):\n**{COMMAND_PREFIX}pstar** Wanna see some \"stats\" on your favorite star?\n**{COMMAND_PREFIX}lewd** '
+            message += f'Shows all the roles in the server\n\n**{COMMAND_PREFIX}discounts** Shows you the **best** discounts on steam, or allows you to search for a **game** in different stores\n\n🔞 Adult Commands (DM Only):\n**{COMMAND_PREFIX}pstar** Wanna see some \"stats\" on your favorite star?\n**{COMMAND_PREFIX}lewd** '
             message += f'Want some tasty pics from your favorite categories? 😋'
             if can_manage_channels(context.author):
                 message += f'\n\n**💝 For Admins**\n**{COMMAND_PREFIX}embed** Allows you to create an embeded message\n**/poll** Allows you to create polls\n**{COMMAND_PREFIX}purge** Will delete x number of messages from the current channel\n\n**{COMMAND_PREFIX}'
                 message += f'role_select** Sends the message to allow people to select roles\n**{COMMAND_PREFIX}role_exclude** Allows you to exclude roles from Role Select\n**{COMMAND_PREFIX}reset_role_exclude**'
                 message += f' Resets the list of excluded roles\n\n**{COMMAND_PREFIX}set_welcome** Sets the Welcome channel\n**{COMMAND_PREFIX}'
-                message += f'set_audit** Sets the AuditLog channel \n**{COMMAND_PREFIX}set_confessions** Sets the Confessions channel\n**{COMMAND_PREFIX}enable_confessions** Enable of disable confessions for this server\n**'
-                message += f'{COMMAND_PREFIX}enable_audit** Enable of disable Audit Logs in this server\n**{COMMAND_PREFIX}enable_welcome** Enable of disable welcome messages in this server\n\n**{COMMAND_PREFIX}set_discounts** Will send a message with current offers and will set the channel for future weekly offer messages\n'
+                message += f'set_audit** Sets the AuditLog channel\n**{COMMAND_PREFIX}set_confessions** Sets the Confessions channel\n**{COMMAND_PREFIX}set_suggestions** Sets the Suggestions channel\n**{COMMAND_PREFIX}enable_confessions** Enable or disable confessions for this server\n**'
+                message += f'{COMMAND_PREFIX}enable_audit** Enable or disable Audit Logs in this server\n**{COMMAND_PREFIX}enable_welcome** Enable or disable welcome messages in this server\n**{COMMAND_PREFIX}enable_suggestions** Enable or disable suggestions in this server \n\n**{COMMAND_PREFIX}set_discounts** Will send a message with current offers and will set the channel for future weekly offer messages\n'
                 message += f'**{COMMAND_PREFIX}enable_discounts** Allows you to enable or disable weekly Steam offer messages for your server'
 
             message += f'\n\n⚠️ If you need help with individual commands type that command!'
@@ -758,10 +762,93 @@ def command_methods():
 
 
     @bot.command(name='discounts')
-    async def discounts(context: commands.Context, arg):
+    async def discounts(context: commands.Context, command: str, argument: str):
         if not is_DM(context.channel):
-            pass
-            # await context.channel.send('Discounts command executed')
+            if command.lower() == 'best':
+                try:
+                    if 11 > int(argument) > 0:
+                        cheapshark_link = 'https://www.cheapshark.com/redirect?dealID='
+                        querystring = {"storeID[0]":"1","metacritic":"0","onSale":"true","pageNumber":"0","upperPrice":"50","exact":"0","pageSize":f"{int(argument)}","sortBy":"Deal Rating","steamworks":"0","output":"json","desc":"0","steamRating":"0","lowerPrice":"0"}
+                        response = requests.get(url=discount_url, headers=discount_headers, params=querystring)
+                        json_response = response.json()
+
+                        try:
+                            if json_response['message']:
+                                await context.channel.send('⚠️ This service is temporarily down, please try again in an hour.')
+                                return
+                        except Exception as e:
+                            pass
+
+                        message = f'Hey there {context.author.display_name}!! 😊 - Here {"is" if int(argument) == 0 else "are"} {int(argument)} great deals on steam!\n'
+                        for game in json_response:
+                            message += f"### {game['title']}\n💸 - Price: ${game['salePrice']}  |  ~~{game['normalPrice']}~~  \n⭐ - Steam Rating: {game['steamRatingPercent']}% ({game['steamRatingCount']})\n💦 - Deal Rating: {game['dealRating']}\n🍰  [Steam Link]({cheapshark_link+game['dealID']})  🍰\n\n"
+
+                        embededMessage = discord.Embed(title=f"🫧  Best Discounts!", description=message, color=0x9dc8d1)
+                        embededMessage.set_author(name=f'{context.author.display_name}', icon_url=context.author.avatar.url)
+                        embededMessage.set_footer(text='>>> Powered by CheapShark\nNote from dev: CheapShark is great guys, use the links above to support them!\nThe links take you to Steam NOT their website.')
+                        await context.channel.send(embed=embededMessage)
+                    else:
+                        await context.channel.send('Please enter a value between 1 and 10!')
+                except:
+                        await context.channel.send('Please enter a value between 1 and 10!')
+            elif command.lower() == 'game':
+                cheapshark_link = 'https://www.cheapshark.com/redirect?dealID='
+
+                querystring = {"limit":"60","exact":"0","title":f"{argument}"}
+                response = requests.get(url=discount_games_url, headers=discount_headers, params=querystring)
+                json_response = response.json()
+
+                try:
+                    if json_response['message']:
+                        await context.channel.send('⚠️ This service is temporarily down, please try again in an hour.')
+                        return
+                except Exception as e:
+                    pass
+
+                if len(json_response) == 0:
+                    await context.channel.send(f'Game: \"{argument}\" was not found!')
+                else:
+                    game_id = json_response[0]['gameID']
+
+                    querystring = {"id":f"{game_id}"}
+                    response = requests.get(url=discount_games_url, headers=discount_headers, params=querystring)
+                    json_response = response.json()
+                    
+                    game_name = json_response["info"]["title"]
+
+                    message = f'Hey there {context.author.display_name}!! 😊 - Here are the best deals for **{game_name}** right now!\n'
+                    message += f'\n**💸 Cheapest Price Ever: ${json_response["cheapestPriceEver"]["price"]}**\n'
+
+                    at_least_one = False
+                    for deal in json_response['deals']:
+                        storeID = deal['storeID']
+                        store_name = cheapshark_stores[int(storeID) - 1]['storeName']
+                        if cheapshark_stores[int(storeID) - 1]['isActive'] == 0:
+                            continue
+                        
+                        if deal['price'] == deal['retailPrice']:
+                            continue
+                        message += f"### Store: {store_name}\n💸 - Price: ${deal['price']}  |  ~~{deal['retailPrice']}~~\n🍰  [{store_name} Link]({cheapshark_link+deal['dealID']})  🍰\n\n"
+                        at_least_one = True
+
+                    if not at_least_one:
+                        message += f'## Sorry, no discounts for this game were found as of right now 😢'
+                    
+                    embededMessage = discord.Embed(title=f"🫧  {game_name} Discounts!", description=message, color=0x9dc8d1)
+                    embededMessage.set_author(name=f'{context.author.display_name}', icon_url=context.author.avatar.url)
+                    embededMessage.set_footer(text='>>> Powered by CheapShark\n')
+                    embededMessage.set_thumbnail(url=json_response['info']['thumb'])
+                    await context.channel.send(embed=embededMessage)
+            else:
+                await context.channel.send(f'The command goes like:\n**{COMMAND_PREFIX}discounts game \"Assassin\'s Creed\"**\nor\n**{COMMAND_PREFIX}discounts best 5**')
+
+    @discounts.error
+    async def discounts_error(context: commands.Context, error):
+        if not is_DM(context.channel):
+            if type(error) is ValueError:
+                pass
+            else:
+                await context.channel.send(f'The command goes like:\n**{COMMAND_PREFIX}discounts game \"Assassin\'s Creed\"**\nor\n**{COMMAND_PREFIX}discounts best 5**')
 
 
     @bot.command(name='set_discounts')
@@ -769,6 +856,7 @@ def command_methods():
         if not is_DM(context.channel):
             if can_manage_channels(context.author):
                 serverDict[context.guild.id].discount_promote_channel_id = context.channel.id
+                serverDict[context.guild.id].automated_discounts = True
                 save_servers()
                 await send_discount_message(context.guild)
             else:
@@ -800,6 +888,42 @@ def command_methods():
                 await context.channel.send('Sorry only an admin can do that 😔')
 
 
+    @bot.command(name='set_suggestions')
+    async def set_suggestions(context: commands.Context):
+        if not is_DM(context.channel):
+            if can_manage_channels(context.author):
+                serverDict[context.guild.id].suggest_target_channel = context.channel.id
+                save_servers()
+                await context.channel.send('Channel has been set! This is where all user suggestions will go!')
+            else:
+                await context.channel.send('Sorry only an admin can do that 😔')
+
+
+    @bot.command(name='enable_suggestions')
+    async def enable_suggestions(context: commands.Context, arg):
+        if not is_DM(context.channel):
+            if can_manage_channels(context.author):
+                if serverDict[context.guild.id].suggest_target_channel == 0:
+                    await context.send(f'Please set a suggestions channel before enabling it! Use the following command to do so:\n**{COMMAND_PREFIX}set_suggestions**')
+                elif arg.lower() == 'true' or arg.lower() == 'false':
+                    serverDict[context.guild.id].suggest_enabled = True if arg == 'true' else False
+                    state = serverDict[context.guild.id].suggest_enabled
+                    save_servers()
+                    await context.channel.send('Suggestions are now enabled!' if (state == True) else 'Suggestions are now disabled')
+                else:
+                    await context.send(f'The command is:\n{COMMAND_PREFIX}enable_suggestions true')
+            else:
+                await context.channel.send('Sorry only an admin can do that 😔')
+    
+    @enable_suggestions.error
+    async def enable_suggestions_error(context: commands.Context, error):
+        if not is_DM(context.channel):
+            if can_manage_channels(context.author):
+                await context.send(f'The command is:\n{COMMAND_PREFIX}enable_suggestions true')
+            else:
+                await context.channel.send('Sorry only an admin can do that 😔')
+
+
 def slash_commands_methods():
     @bot.tree.command(name='confess', description='Tell a secret while remaining anonymous')
     @app_commands.guild_only()
@@ -811,7 +935,8 @@ def slash_commands_methods():
         else:
             embededConfession = discord.Embed(title="🫧  By Anonymous Member!", description=confession, color=0x9dc8d1)
             await interaction.response.send_message('Your confession has been successfully posted and only you can see this message', ephemeral=True)
-            await interaction.channel.send(embed=embededConfession)
+            confessions_channel = interaction.guild.get_channel(serverDict[interaction.guild.id].confessions_channel_id)
+            await confessions_channel.send(embed=embededConfession)
             await send_confession_audit(interaction.guild, interaction.user, confession)
     
     @confess.error
@@ -822,8 +947,8 @@ def slash_commands_methods():
             await interaction.response.send_message('Sorry, confessions are not allowed on this server, tell an admin to enable them.', ephemeral=True)
         elif bot.get_channel(serverDict[interaction.guild.id].confessions_channel_id) is None:
             await interaction.response.send_message('A Confessions channel is set but it is not found in this server (could\'ve been deleted). Please tell an admin about this problem.', ephemeral=True)
-        elif not serverDict[interaction.guild.id].confessions_channel_id == interaction.channel.id:
-            await interaction.response.send_message('Sorry, please do your confession on the confessions channel.', ephemeral=True)
+        # elif not serverDict[interaction.guild.id].confessions_channel_id == interaction.channel.id:
+        #     await interaction.response.send_message('Sorry, please do your confession on the confessions channel.', ephemeral=True)
         else:
             print(f'/confess: {error}')
             await interaction.response.send_message('Uknown Error, please report to admin or dev.', ephemeral=True)
@@ -855,6 +980,25 @@ def slash_commands_methods():
         else:
             print(f'/poll: {error}')
             await interaction.response.send_message('Uknown Error, please report to admin or dev.', ephemeral=True)
+
+
+    @bot.tree.command(name='suggest', description='Send the admins your suggestions on how to make the server or cakebot better!')
+    @app_commands.guild_only()
+    @app_commands.describe(suggestion = 'What would you like to suggest?')
+    async def suggest( interaction: discord.Interaction, suggestion: str):
+        channel_id = serverDict[interaction.guild.id].suggest_target_channel
+        channel = interaction.guild.get_channel(channel_id)
+        if channel:
+            if serverDict[interaction.guild.id].suggest_enabled:
+                embededMessage = discord.Embed(title=f"🫧  Suggestion:", description=suggestion, color=0x9dc8d1)
+                embededMessage.set_author(name=f'{interaction.user.display_name}', icon_url=interaction.user.avatar.url)
+                await channel.send(embed=embededMessage)
+
+                await interaction.response.send_message(f'Your suggestion was successfully sent!', ephemeral=True)
+            else:
+                await interaction.response.send_message(f'Sorry, but suggestions are disabled for this server. Please contact an admin about this.', ephemeral=True)
+        else:
+            await interaction.response.send_message(f'Sorry, but a suggestions channel is not yet set! Contact an admin about this.', ephemeral=True)
 
 
 def lewd_commands():
@@ -1029,7 +1173,7 @@ def is_DM(channel: discord.channel):
 def can_confess(interaction : discord.Interaction):
     if bot.get_channel(serverDict[interaction.guild.id].confessions_channel_id) is None:
         return False
-    elif serverDict[interaction.guild.id].confessions_allowed and serverDict[interaction.guild.id].confessions_channel_id == interaction.channel.id:
+    elif serverDict[interaction.guild.id].confessions_allowed: # and serverDict[interaction.guild.id].confessions_channel_id == interaction.channel.id:
         return True
     else:
         return False
@@ -1100,6 +1244,27 @@ def load_messages():
         print('Goodbye messages loaded')
 
         file.close()
+
+
+def fetch_cheapshark_stores():
+    global cheapshark_stores
+    url = "https://cheapshark-game-deals.p.rapidapi.com/stores"
+
+    headers = {
+        "X-RapidAPI-Key": f"{RAPIAPI_KEY}",
+        "X-RapidAPI-Host": "cheapshark-game-deals.p.rapidapi.com"
+    }
+
+    response = requests.get(url, headers=headers)
+
+    cheapshark_stores = response.json()
+
+    try:
+        if cheapshark_stores['message']:
+            print('\033[93m' + 'Warning: CheapShark Store info was NOT fetched' + '\033[0m')
+            print('\033[93m' + 'Warning: We used more than 100 API calls in an hour' + '\033[0m')
+    except Exception as e:
+        print('CheapShark Store info has been fetched')
 
 
 # ! Role Commands -------------------------------------------------------------------------------------------------
@@ -1293,39 +1458,82 @@ class Server:
 
         self.discount_promote_channel_id = 0
         self.automated_discounts = True
+
+        self.suggest_target_channel = 0
+        self.suggest_enabled = False
     
     def __str__(self) -> str:
-        return f'id: {self.id}  welcome_channel_id: {self.welcome_channel_id}  audit_channel_id: {self.audit_channel_id}  confessions_channel_id: {self.confessions_channel_id}  confessions_allowed: {self.confessions_allowed}  audit_enabled: {self.audit_enabled}  welcome_enabled: {self.welcome_enabled}  automated_discounts: {self.automated_discounts}'
+        return f'server id: {self.id}'
 
     def load_data(self, dictionary):
         self.id = dictionary['id']
 
-        self.welcome_channel_id = dictionary['welcome_channel_id']
-        self.audit_channel_id = dictionary['audit_channel_id']
-        self.confessions_channel_id = dictionary['confessions_channel_id']
+        try:
+            self.welcome_channel_id = dictionary['welcome_channel_id']
+        except:
+            self.welcome_channel_id = 0
+        try:
+            self.audit_channel_id = dictionary['audit_channel_id']
+        except:
+            self.audit_channel_id = 0
+        try:
+            self.confessions_channel_id = dictionary['confessions_channel_id']
+        except:
+            self.confessions_channel_id = 0
 
-        self.confessions_allowed = dictionary['confessions_allowed']
-        self.audit_enabled = dictionary['audit_enabled']
-        self.welcome_enabled = dictionary['welcome_enabled']
+        try:
+            self.confessions_allowed = dictionary['confessions_allowed']
+        except:
+            self.confessions_allowed = False
+        try:
+            self.audit_enabled = dictionary['audit_enabled']
+        except:
+            self.audit_enabled = False
+        try: 
+            self.welcome_enabled = dictionary['welcome_enabled']
+        except:
+            self.welcome_enabled = False
 
-        self.role_select_messages = dictionary['role_select_messages']
-        self.role_select_channel = dictionary['role_select_channel']
-        self.role_select_excluded = dictionary['role_select_excluded']
-        self.role_select_dicts = dictionary['role_select_dicts']
+        try:
+            self.role_select_messages = dictionary['role_select_messages']
+        except:
+            self.role_select_messages = []
+        try:
+            self.role_select_channel = dictionary['role_select_channel']
+        except:
+            self.role_select_channel = 0
+        try:
+            self.role_select_excluded = dictionary['role_select_excluded']
+        except:
+            self.role_select_excluded = []
+        try:
+            self.role_select_dicts = dictionary['role_select_dicts']
+        except:
+            self.role_select_dicts = []
 
-        self.discount_promote_channel_id = dictionary['discount_promote_channel_id']
-        self.automated_discounts = dictionary['automated_discounts']
+        try:
+            self.discount_promote_channel_id = dictionary['discount_promote_channel_id']
+        except:
+            self.discount_promote_channel_id = 0
+        try:
+            self.automated_discounts = dictionary['automated_discounts']
+        except:
+            self.automated_discounts = False
+
+        try:
+            self.suggest_target_channel = dictionary['suggest_target_channel']
+        except:
+            self.suggest_target_channel = 0
+        try:
+            self.suggest_enabled = dictionary['suggest_enabled']
+        except:
+            self.suggest_enabled = False
 
 
-# TODO: Add normal version of the discount command so non-admins can use it
-# TODO: Add discount commands to help message
+# TODO: Test suggest command further
 
-# ! TODO in the future: Split code into different files
+# ! TODO Soon: Split code into different files
 
 # * Commit:
-# - Fixed (hopefully xD) the issue where it would keep sending the offers messages.
-# - Restructured the send_all_discounts method so it only makes 1 API call, instead of using send_discount_message.
-# - Added option for servers to opt out of automated discount offers.
-# - Renamed discounts command to set_discounts and added enable_discounts command.
-# - Help command now checks if the asking user is an admin or not, to determine which commands to show.
+# - Added admin commands for suggestions to help message.
 # - 
