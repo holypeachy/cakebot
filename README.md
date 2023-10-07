@@ -5,6 +5,7 @@ A friend was starting a discord server and I wanted to make a custom bot for it.
 
 ## Important Notes:
 - For those who want to fork the code [click here](https://github.com/holypeachy/cakebot#for-reference-here-are-all-the-apis-im-currently-using).
+- For OAuth2 / Bot Permissions [click here](https://github.com/holypeachy/cakebot#OAuth2).
 - Keep in mind that this is a work in progress. The main branch is the "production" branch, the code here should be mostly bug free. If there is a bug it will quickly be caught because my bot is always running.  
 - Even though the bot was only intended for 1 Discord server, it is written to support multiple servers.
 - Every update that a property is added to the Server class, the bot will break and not start. You'll have to manually add the key and a value to the json file for it to load. I need to fix this soon because it has become quite a nuisance.
@@ -73,3 +74,7 @@ RAPIAPI_KEY = 'your_api_key_here'
 
 ### For reference, here are all the APIs I'm currently using
 ![image](https://github.com/holypeachy/cakebot/assets/89674775/1e9c0204-8320-437f-a30f-48b72c486199)
+
+## OAuth2
+Here are all the permission the bot will need:
+![image](https://github.com/holypeachy/cakebot/assets/89674775/51d04d44-9486-4428-8efd-ee38a75cadf5)
