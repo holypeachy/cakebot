@@ -1,16 +1,17 @@
 import requests
 import json
 from config import RAPIAPI_KEY
+from config import RSA_KEY
 
 from datetime import datetime
 import pytz
 from threading import Timer
 
-url = "https://cheapshark-game-deals.p.rapidapi.com/stores"
+url = "https://dad-jokes.p.rapidapi.com/random/joke/png"
 
 headers = {
 	"X-RapidAPI-Key": f"{RAPIAPI_KEY}",
-	"X-RapidAPI-Host": "cheapshark-game-deals.p.rapidapi.com"
+	"X-RapidAPI-Host": "dad-jokes.p.rapidapi.com"
 }
 
 response = requests.get(url, headers=headers)

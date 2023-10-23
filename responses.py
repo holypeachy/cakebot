@@ -16,6 +16,7 @@ def handle_response(message) -> str:
 
     elif p_message == 'good cake':
         return GOOD_LIST[random.randint(0, len(GOOD_LIST) - 1)]
-    
+    elif p_message == 'shut up cake':
+        return 'You are mean 😟'
     else:
         return ''

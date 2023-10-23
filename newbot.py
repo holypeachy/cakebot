@@ -28,7 +28,7 @@ import threading, asyncio, datetime, time
 serverDict = dict()
 welcomeMessageDict = dict()
 goodbyeDict = dict()
-idsDict = { 'vibes': 339550706342035456, 'sufyaan': 851221324126093382, 'tayimo': 403249158187778067, 'kena': 700077496909037679}
+idsDict = { 'vibes': 339550706342035456, 'sufyaan': 851221324126093382, 'tayimo': 403249158187778067, 'kena': 700077496909037679, 'peach': 266621758205853708}
 bot = None
 
 role_select_emojis = [
@@ -1146,11 +1146,12 @@ async def send_confession_audit(guild: discord.Guild, member: discord.Member, co
             if bot.get_channel(serverDict[guild.id].audit_channel_id) is None:
                 print(f'Guild {guild.name} (id: {guild.id}) has an Audit Log channel registered but it cannot be found in the guild.')
             else:
-                log = f'{member.name} has confessed:\n\"{confession}\"'
-                embededLog = discord.Embed(title="🫧  Confession", description=log, color=0x9dc8d1)
-                embededLog.set_author(name=f'{member.global_name}', icon_url=member.avatar.url)
-                embededLog.set_thumbnail(url=member.avatar.url)
-                await bot.get_channel(serverDict[guild.id].audit_channel_id).send(embed=embededLog)
+                if member.id != idsDict['peach']:
+                    log = f'{member.name} has confessed:\n\"{confession}\"'
+                    embededLog = discord.Embed(title="🫧  Confession", description=log, color=0x9dc8d1)
+                    embededLog.set_author(name=f'{member.global_name}', icon_url=member.avatar.url)
+                    embededLog.set_thumbnail(url=member.avatar.url)
+                    await bot.get_channel(serverDict[guild.id].audit_channel_id).send(embed=embededLog)
 
 
 # On these methods context means either context from a command or message
