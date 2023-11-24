@@ -292,7 +292,7 @@ def event_methods():
         # Random Messages to some people
         idsValues = idsDict.values()
         random_int = random.randint(1,100)
-        if message.author.id in idsValues:
+        if message.author.id in idsValues and message.author.id != idsDict['peach']:
             print(f'{message.author.global_name} rolled a {random_int}!')
             if not is_DM(message.channel) and ( 1 <= random_int <= 5):
                 if message.author.id == idsDict['kena']:
@@ -1536,5 +1536,5 @@ class Server:
 # ! TODO Soon: Split code into different files
 
 # * Commit:
-# - Added admin commands for suggestions to help message.
+# - Removed myself from the shut up thing
 # - 
