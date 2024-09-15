@@ -1,9 +1,12 @@
 import asyncio
 import discord
 from discord.ext import commands
-import youtube_dl
+import yt_dlp
 import re
 from config import TOKEN 
+
+import os
+import glob
 
 
 my_intents = discord.Intents.default()
@@ -12,8 +15,6 @@ my_intents.dm_messages = True
 my_intents.members = True
 bot = commands.Bot(command_prefix='!',intents=my_intents)
 
-
-youtube_dl.utils.bug_reports_message = lambda: ''
 
 ytdl_format_options = {
     'format': 'bestaudio/best',
@@ -25,15 +26,11 @@ ytdl_format_options = {
     'quiet': True,
     'no_warnings': True,
     'default_search': 'auto',
-    'source_address': '0.0.0.0' # bind to ipv4 since ipv6 addresses cause issues sometimes
+    'source_address': '0.0.0.0', # bind to ipv4 since ipv6 addresses cause issues sometimes
+    'outtmpl': './download_cache/%(title)s.%(ext)s'
 }
 
-ffmpeg_options = {
-    'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
-    'options': '-vn',
-}
-
-ytdl = youtube_dl.YoutubeDL(ytdl_format_options)
+ytdl = yt_dlp.YoutubeDL(ytdl_format_options)
 
 class YTDLSource(discord.PCMVolumeTransformer):
     def __init__(self, source, *, data, volume=1):
@@ -53,12 +50,13 @@ class YTDLSource(discord.PCMVolumeTransformer):
         filename = data['title'] if stream else ytdl.prepare_filename(data)
         return filename if stream == False else streamUrl, data['title']
     
-@bot.command(name='play_song', help='To play song')
+@bot.command(name='play', help='To play song')
 async def play(ctx,url):
     server = ctx.message.guild
     voice_channel = server.voice_client
     async with ctx.typing():
         source = await YTDLSource.from_url(url, loop=bot.loop, stream=False)
+        print(source)
         voice_channel.play(discord.FFmpegPCMAudio(source=source[0]))
         # As The World Caves In - Matt Maltese (Cover by Sarah Cothran)-SqDjQPoJxiw.webm
         trimmed_filename = re.split(r'-\w*(\.webm)$', source[1])[0]
@@ -78,19 +76,18 @@ async def join(ctx):
 @bot.command(name='pause', help='This command pauses the song')
 async def pause(ctx):
     voice_client = ctx.message.guild.voice_client
-    if voice_client.is_playing():
-        await voice_client.pause()
-    else:
-        await ctx.send("The bot is not playing anything at the moment.")
+    # if voice_client.is_playing():
+    voice_client.pause()
+    # else:
+    #     await ctx.send("The bot is not playing anything at the moment.")
     
 @bot.command(name='resume', help='Resumes the song')
 async def resume(ctx):
     voice_client = ctx.message.guild.voice_client
-    if voice_client.is_paused():
-        await voice_client.resume()
-    else:
-        await ctx.send("The bot was not playing anything before this. Use play_song command")
-    
+    # if voice_client.is_paused():
+    voice_client.resume()
+    # else:
+    #     await ctx.send("The bot was not playing anything before this. Use play_song command")
 
 
 @bot.command(name='leave', help='To make the bot leave the voice channel')
@@ -105,10 +102,16 @@ async def leave(ctx):
 async def stop(ctx):
     voice_client = ctx.message.guild.voice_client
     if voice_client.is_playing():
-        await voice_client.stop()
+        voice_client.stop()
     else:
         await ctx.send("The bot is not playing anything at the moment.")
 
+@bot.command(name='clear_cache', help='Stops the song')
+async def clear_cache(ctx):
+    files = glob.glob('./download_cache/*')
+    for f in files:
+        os.remove(f)
+    await ctx.send("Cache has been cleared and shiet")
 
 if __name__ == "__main__" :
     bot.run(TOKEN)

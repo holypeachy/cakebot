@@ -296,7 +296,7 @@ def event_methods():
             print(f'{message.author.global_name} rolled a {random_int}!')
             if not is_DM(message.channel) and ( 1 <= random_int <= 5):
                 if message.author.id == idsDict['kena']:
-                    if 1 <= random_int <= 3:
+                    if 1 <= random_int <= 2:
                         await message.channel.send(f'Kena is the Kueen!')
                 else:
                     await message.channel.send(f'Shut up {message.author.global_name}')
