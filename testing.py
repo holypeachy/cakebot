@@ -106,7 +106,7 @@ async def stop(ctx):
     else:
         await ctx.send("The bot is not playing anything at the moment.")
 
-@bot.command(name='clear_cache', help='Stops the song')
+@bot.command(name='clear_cache', help='Clears the cache of youtube playback')
 async def clear_cache(ctx):
     files = glob.glob('./download_cache/*')
     for f in files:
