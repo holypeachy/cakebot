@@ -6,9 +6,12 @@ authors = ["Your Name <you@example.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = "^3.9"
 discord = "^2.3.1"
 pytz = "^2023.3"
+yt-dlp = "^2024.11.4"
+pynacl = "^1.5.0"
+ffmpeg = "^1.4"
 
 
 [build-system]
