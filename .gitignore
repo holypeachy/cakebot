@@ -3,7 +3,7 @@ config.py
 servers.json
 *.webm
 test.json
-downdload_cache/
+download_cache/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
