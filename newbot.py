@@ -294,11 +294,8 @@ def event_methods():
         random_int = random.randint(1,100)
         if message.author.id in idsValues:
             print(f'{message.author.global_name} rolled a {random_int}!')
-            if not is_DM(message.channel) and ( 1 <= random_int <= 5):
-                if message.author.id == idsDict['kena']:
-                    if 1 <= random_int <= 3:
-                        await message.channel.send(f'Kena is the Kueen!')
-                else:
+            if not is_DM(message.channel) and ( 1 <= random_int <= 3):
+                if message.author.id != idsDict['kena']:
                     await message.channel.send(f'Shut up {message.author.global_name}')
 
         # * This actually processes the commands since we overrode on_message()
