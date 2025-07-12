@@ -2,6 +2,7 @@
 import discord
 from discord import app_commands
 from discord.ext import commands
+from typing import Optional
 
 # Other scripts
 import responses
@@ -288,15 +289,6 @@ def event_methods():
         # Message log
         #if not is_DM(message.channel):
         print(f"\n\"{message.author.global_name}\" / \"{message.author}\" said: \"{str(message.content)}\" in \"{message.channel}\" server: \"{message.guild}\"")
-
-        # Random Messages to some people
-        idsValues = idsDict.values()
-        random_int = random.randint(1,100)
-        if message.author.id in idsValues:
-            print(f'{message.author.global_name} rolled a {random_int}!')
-            if not is_DM(message.channel) and ( 1 <= random_int <= 3):
-                if message.author.id != idsDict['kena']:
-                    await message.channel.send(f'Shut up {message.author.global_name}')
 
         # * This actually processes the commands since we overrode on_message()
         await bot.process_commands(message)
@@ -926,15 +918,24 @@ def slash_commands_methods():
     @app_commands.guild_only()
     @app_commands.check(can_confess)
     @app_commands.describe(confession = 'What would you like to confess?')
-    async def confess(interaction: discord.Interaction, confession: str):
+    @app_commands.describe(image= 'Would you like to attach an image?')
+    async def confess(interaction: discord.Interaction, confession: str, image: Optional[discord.Attachment] = None):
         if '@everyone' in confession:
             await interaction.response.send_message('Please don\'t mention everyone on your confession', ephemeral=True)
         else:
+            hasImage = False
             embededConfession = discord.Embed(title="🫧  By Anonymous Member!", description=confession, color=0x9dc8d1)
+            if image:
+                if image.content_type and image.content_type.startswith("image/"):
+                    embededConfession.set_image(url=image.url)
+                    hasImage = True
+                else:
+                    await interaction.response.send_message("The file you uploaded is not an image, please make sure it's an image.\nYour confession:\n\n" + confession, ephemeral=True)
+                    return
             await interaction.response.send_message('Your confession has been successfully posted and only you can see this message', ephemeral=True)
             confessions_channel = interaction.guild.get_channel(serverDict[interaction.guild.id].confessions_channel_id)
             await confessions_channel.send(embed=embededConfession)
-            await send_confession_audit(interaction.guild, interaction.user, confession)
+            await send_confession_audit(interaction.guild, interaction.user, confession, hasImage)
     
     @confess.error
     async def confess_error(interaction : discord.Interaction, error):
@@ -1136,7 +1137,7 @@ async def send_purge_audit(member: discord.Member, guild: discord.Guild, limit :
                 await bot.get_channel(serverDict[guild.id].audit_channel_id).send(embed=embededLog)
 
 
-async def send_confession_audit(guild: discord.Guild, member: discord.Member, confession: str):
+async def send_confession_audit(guild: discord.Guild, member: discord.Member, confession: str, hasImage: bool):
     if serverDict.__contains__(guild.id):
         # serverDict[guild.id].audit_enabled and
         if not serverDict[guild.id].audit_channel_id == 0:
@@ -1145,7 +1146,10 @@ async def send_confession_audit(guild: discord.Guild, member: discord.Member, co
             else:
                 if member.id != idsDict['peach']:
                     log = f'{member.name} has confessed:\n\"{confession}\"'
-                    embededLog = discord.Embed(title="🫧  Confession", description=log, color=0x9dc8d1)
+                    if hasImage:
+                        embededLog = discord.Embed(title="🫧️  Confession with Image 🖼️", description=log, color=0x9dc8d1)
+                    else:
+                        embededLog = discord.Embed(title="🫧  Confession", description=log, color=0x9dc8d1)
                     embededLog.set_author(name=f'{member.global_name}', icon_url=member.avatar.url)
                     embededLog.set_thumbnail(url=member.avatar.url)
                     await bot.get_channel(serverDict[guild.id].audit_channel_id).send(embed=embededLog)
